@@ -1,0 +1,9 @@
+# Tooling configuration only. The Python code in experiments/ is a set of standard-library
+# illustrations and exact arithmetic checks; it is not an installable package.
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

@@ -1,0 +1,7 @@
+.lake/
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+.ruff_cache/
+uv.lock

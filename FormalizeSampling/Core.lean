@@ -1,0 +1,142 @@
+module
+
+public import FormalizeSampling.Foundations.BakryEmery
+public import FormalizeSampling.Foundations.BakryEmeryGeneralPi
+public import FormalizeSampling.Foundations.BakryEmeryPi
+public import FormalizeSampling.Foundations.ConvexSmoothing
+public import FormalizeSampling.Foundations.Euclidean
+public import FormalizeSampling.Foundations.GaussianFunctionalLSI
+public import FormalizeSampling.Foundations.GaussianFunctionalLSIPi
+public import FormalizeSampling.Foundations.GaussianKL
+public import FormalizeSampling.Foundations.GaussianLSI
+public import FormalizeSampling.Foundations.GaussianLSIBasics
+public import FormalizeSampling.Foundations.GaussianLSIBasicsPi
+public import FormalizeSampling.Foundations.GaussianLSIPi
+public import FormalizeSampling.Foundations.GaussianLSIZero
+public import FormalizeSampling.Foundations.GaussianLSIZeroPi
+public import FormalizeSampling.Foundations.GibbsMeasure
+public import FormalizeSampling.Foundations.Gronwall
+public import FormalizeSampling.Foundations.HeatFlowDeBruijn
+public import FormalizeSampling.Foundations.HeatFlowDeBruijnPi
+public import FormalizeSampling.Foundations.HeatFlowRegularity
+public import FormalizeSampling.Foundations.HeatFlowRegularityPerturbed
+public import FormalizeSampling.Foundations.HeatFlowRegularityPerturbedPi
+public import FormalizeSampling.Foundations.HeatFlowRegularityPi
+public import FormalizeSampling.Foundations.HeatKernel
+public import FormalizeSampling.Foundations.HeatKernelPi
+public import FormalizeSampling.Foundations.HolleyStroock
+public import FormalizeSampling.Foundations.KLChainRule
+public import FormalizeSampling.Foundations.KLJointLowerSemicontinuity
+public import FormalizeSampling.Foundations.KLLowerSemicontinuity
+public import FormalizeSampling.Foundations.KLProduct
+public import FormalizeSampling.Foundations.KLWarmApprox
+public import FormalizeSampling.Foundations.LogSobolev
+public import FormalizeSampling.Foundations.LogSobolevExtension
+public import FormalizeSampling.Foundations.LogSobolevExtensionPi
+public import FormalizeSampling.Foundations.LogSobolevLipschitzMap
+public import FormalizeSampling.Foundations.LogSobolevPi
+public import FormalizeSampling.Foundations.LogSobolevTensorPi
+public import FormalizeSampling.Foundations.MeasureHelpers
+public import FormalizeSampling.Foundations.MollifierL1
+public import FormalizeSampling.Foundations.Pinsker
+public import FormalizeSampling.Foundations.PrekopaLeindler
+public import FormalizeSampling.Foundations.SPDPreconditioner
+public import FormalizeSampling.Foundations.TotalVariation
+public import FormalizeSampling.Foundations.VectorCalculus
+public import FormalizeSampling.Foundations.WeakDerivative
+public import FormalizeSampling.Foundations.WeakDifferenceQuotient
+public import FormalizeSampling.Identities.DensityStein
+public import FormalizeSampling.Identities.GaussianStein
+public import FormalizeSampling.Identities.KLTransportVariation
+public import FormalizeSampling.Identities.OUPosteriorScore
+public import FormalizeSampling.Identities.ScoreFlowWeak
+public import FormalizeSampling.Identities.ScorePropagation
+public import FormalizeSampling.Identities.Tweedie
+public import FormalizeSampling.Kernels.ErrorDecomposition
+public import FormalizeSampling.Kernels.ErrorPropagation
+public import FormalizeSampling.Kernels.ErrorPropagationKL
+public import FormalizeSampling.Kernels.GaussianKernels
+public import FormalizeSampling.Kernels.KernelPi
+public import FormalizeSampling.Kernels.ReverseKernel
+public import FormalizeSampling.Flow.ApproximateVelocity
+public import FormalizeSampling.Flow.ContinuityEquation
+public import FormalizeSampling.Flow.ContinuityUniquenessAffine
+public import FormalizeSampling.Flow.ContinuityUniquenessDiPernaLions
+public import FormalizeSampling.Flow.ContinuityUniquenessLipschitz
+public import FormalizeSampling.Flow.ContinuityUniquenessLocal
+public import FormalizeSampling.Flow.ContinuityUniquenessMollified
+public import FormalizeSampling.Flow.DecayWithError
+public import FormalizeSampling.Flow.DeterministicStep
+public import FormalizeSampling.Flow.DeterministicStepGeneral
+public import FormalizeSampling.Flow.DeterministicStepMoments
+public import FormalizeSampling.Flow.DeterministicStepMomentsPi
+public import FormalizeSampling.Flow.DeterministicStepPi
+public import FormalizeSampling.Flow.DiPernaLionsCommutator
+public import FormalizeSampling.Flow.DiPernaLionsCommutatorL1
+public import FormalizeSampling.Flow.DiPernaLionsCommutatorLp
+public import FormalizeSampling.Flow.DiPernaLionsLinearGrowth
+public import FormalizeSampling.Flow.DiPernaLionsLp
+public import FormalizeSampling.Flow.DiPernaLionsRenormalization
+public import FormalizeSampling.Flow.DiPernaLionsRenormalizationBeta
+public import FormalizeSampling.Flow.DiPernaLionsUniqueness
+public import FormalizeSampling.Flow.DiPernaLionsUniquenessGeneral
+public import FormalizeSampling.Flow.FokkerPlanckExistence
+public import FormalizeSampling.Flow.FokkerPlanckExistenceCauchy
+public import FormalizeSampling.Flow.FokkerPlanckExistenceCompact
+public import FormalizeSampling.Flow.FokkerPlanckExistenceContinuousTime
+public import FormalizeSampling.Flow.FokkerPlanckExistenceDissipative
+public import FormalizeSampling.Flow.FokkerPlanckExistenceExtract
+public import FormalizeSampling.Flow.FokkerPlanckExistenceGenerator
+public import FormalizeSampling.Flow.FokkerPlanckExistenceLinear
+public import FormalizeSampling.Flow.FokkerPlanckExistenceLyap
+public import FormalizeSampling.Flow.FokkerPlanckExistenceStep
+public import FormalizeSampling.Flow.FokkerPlanckExistenceTight
+public import FormalizeSampling.Flow.FokkerPlanckExistenceTime
+public import FormalizeSampling.Flow.FokkerPlanckExistenceTimeOp
+public import FormalizeSampling.Flow.FokkerPlanckUniqueness
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessCutoff
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessDual
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessGauss
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessHeat
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessLipschitz
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessLipschitzHeat
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessLipschitzStep
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessLipschitzTight
+public import FormalizeSampling.Flow.FokkerPlanckUniquenessUnbounded
+public import FormalizeSampling.Flow.IdealVelocityStep
+public import FormalizeSampling.Flow.IdealVelocityStepPi
+public import FormalizeSampling.Flow.KLDecay
+public import FormalizeSampling.Flow.KLDissipation
+public import FormalizeSampling.Flow.LogSobolevAlongGaussian
+public import FormalizeSampling.Flow.NoiseScoreEquivalence
+public import FormalizeSampling.Flow.OULangevinDecay
+public import FormalizeSampling.Flow.OULangevinDecayPi
+public import FormalizeSampling.Flow.ProbabilityFlowOU
+public import FormalizeSampling.Flow.ProbabilityFlowOUCounterexample
+public import FormalizeSampling.Flow.ProbabilityFlowOUMoment
+public import FormalizeSampling.Flow.ProbabilityFlowOUThirdMoment
+public import FormalizeSampling.Flow.ProbabilityFlowOUZero
+public import FormalizeSampling.Flow.ReverseTime
+public import FormalizeSampling.Flow.WeakFokkerPlanckOU
+public import FormalizeSampling.ScoreEstimation.FeatureClass
+public import FormalizeSampling.ScoreEstimation.InnerSamplerAveraged
+public import FormalizeSampling.ScoreEstimation.InnerSamplerBias
+public import FormalizeSampling.ScoreEstimation.MonteCarlo
+public import FormalizeSampling.ScoreEstimation.SteinObjective
+
+/-!
+# The sampler-independent core
+
+This module imports every module of the directories `Foundations`, `Identities`, `Kernels`,
+`Flow` and `ScoreEstimation` (the three lowest layers below) and nothing else. They contain the
+analytic and probabilistic tools (total variation and KL, log-Sobolev inequalities, heat-flow
+and Gaussian computations, Gibbs measures, Stein, Tweedie and score identities, error
+propagation for Markov kernels, continuity and Fokker–Planck equations, score estimation)
+without any concrete sampler. The modules of `Samplers`, `Examples`, `Counterexamples` and
+`Audit` build on them; importing `FormalizeSampling.Core` instead of `FormalizeSampling` gives
+the tools without the sampler analyses.
+
+Each module imports only modules of its own or a lower layer, in the order
+`Foundations` < `Identities`, `Kernels` < `Flow`, `ScoreEstimation` < `Samplers` <
+`Examples`, `Counterexamples` < `Audit`; `scripts/check_contracts.py` enforces this.
+-/
