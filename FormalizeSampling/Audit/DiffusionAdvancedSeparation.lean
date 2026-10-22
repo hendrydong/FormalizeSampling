@@ -34,7 +34,8 @@ conclusion is made explicit.
 * `memorisation_witness` (DF-2).
 * `ddpmBound_pm_le`: the DF-1 bound `√((I + (r-1)d/2 (1 + (N-1) log r) + β_2 ε²/2)/2)` for
   `(δ_{-1} + δ_1)/2`, `u_1 = 1`, `r = 2`, `N = 2`, `ε ≤ 1/2` is `≤ 4/5`.
-* `pf_separation_witness` (DF-3), `pf_smooth_separation_witness` (DF-7).
+* `pf_separation_witness` (DF-3), `pf_smooth_separation_witness` (DF-7),
+  `pf_smooth_terminal_smoothed_witness` (DF-9 terminal smoothing on the DF-7 instance).
 * `pfGain_one`, `pfCoeff_unifGrid`, `lipBound_unifGrid`, `algVar_pfGain_one`,
   `pf_coupling_witness` (DF-9).
 
@@ -61,6 +62,7 @@ open FormalizeSampling.Diffusion FormalizeSampling.DiffusionDiscretization
 open FormalizeSampling.FokkerPlanckExistence (sqDist)
 open FormalizeSampling.RGOCouplingChainPi (eDist)
 open FormalizeSampling.ProximalLogConcaveRatePi (sqCostPi)
+open FormalizeSampling.ProximalPi (forwardKernelPi)
 
 /-! ### DF-2: memorisation for a two-point training set -/
 
@@ -176,6 +178,51 @@ theorem pf_smooth_separation_witness :
     (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (0 : ℝ) < 1 / 10)
   refine ⟨s, hs, E, hE, hEb, hk, h2, by linarith, ?_⟩
   exact hddpm.trans (ddpmBound_pm_le (by norm_num) le_rfl)
+
+/-- **Witness DF-9 terminal smoothing on the DF-7 instance.** Same two-point instance as
+`pf_smooth_separation_witness` (`u_1 = 1`, `r = 2`, `N = 2`, `ε = 1/2`, `η = 1/10`): one analytic
+score gives the deterministic probability-flow output `q_1` with `TV(p_1, q_1) ≥ 9/10` and, for
+every `σ2 > 0`, `KL(N_{σ2} ∘ₘ q_1 ‖ N_{σ2} ∘ₘ q*_1) ≤ (|b_2| / 2)² / (2 σ2)` and
+`TV(N_{σ2} ∘ₘ q_1, N_{σ2} ∘ₘ q*_1) ≤ |b_2| / (4 √σ2)`, where `q*_1` is the exact-score
+deterministic output. The lower bound is against `p_1`, the upper bounds against the smoothed
+`q*_1`. -/
+theorem pf_smooth_terminal_smoothed_witness :
+    ∃ (s : ℕ → (Fin 1 → ℝ) → Fin 1 → ℝ) (hs : ∀ k, Measurable (s k))
+      (E : (Fin 1 → ℝ) → Fin 1 → ℝ),
+      ContDiff ℝ ⊤ E ∧ (∀ z, ∑ i, E z i ^ 2 ≤ (1 / 2) ^ 2) ∧
+      (∀ k, k ≠ 2 → ∀ y, s k y = score (fwdDensity pm (geomGrid 1 2) k) y) ∧
+      (∀ y, s 2 y = score (fwdDensity pm (geomGrid 1 2) 2) y +
+        E (pfMean (geomGrid 1 2) (exactScore pm (geomGrid 1 2)) 2 y)) ∧
+      9 / 10 ≤ TotalVariation.tvSup (fwdLaw pm (geomGrid 1 2) 1)
+        (algLaw zeroVar (pfMean (geomGrid 1 2) s)
+          (measurable_detMean (measurable_pfLin _) _ hs) 2 1) ∧
+      ∀ σ2 : ℝ, 0 < σ2 →
+        klDiv
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (pfMean (geomGrid 1 2) s)
+            (measurable_detMean (measurable_pfLin _) _ hs) 2 1)
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar
+            (pfMean (geomGrid 1 2) (exactScore pm (geomGrid 1 2)))
+            (measurable_detMean (measurable_pfLin _) _ (measurable_exactScore _ _)) 2 1) ≤
+          ENNReal.ofReal ((|pfCoeff (geomGrid 1 2) 2| * (1 / 2)) ^ 2 / (2 * σ2)) ∧
+        TotalVariation.tvSup
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (pfMean (geomGrid 1 2) s)
+            (measurable_detMean (measurable_pfLin _) _ hs) 2 1)
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar
+            (pfMean (geomGrid 1 2) (exactScore pm (geomGrid 1 2)))
+            (measurable_detMean (measurable_pfLin _) _ (measurable_exactScore _ _)) 2 1) ≤
+          |pfCoeff (geomGrid 1 2) 2| * (1 / 2) / (2 * Real.sqrt σ2) := by
+  have ht01 : (geomGrid 1 2) 0 < (geomGrid 1 2) 1 :=
+    geomGrid_strictMono one_pos one_lt_two zero_lt_one
+  have hb2 : pfCoeff (geomGrid 1 2) 2 ≠ 0 :=
+    pfCoeff_two_ne_zero (geomGrid_strictMono one_pos one_lt_two one_lt_two)
+  obtain ⟨s, hs, E, hE, hEb, hk, h2, -, hTV, hsm⟩ :=
+    smooth_separation_tv_far_terminal_smoothed_close pm one_pos ht01
+      (measurable_pfLin (geomGrid 1 2)) hb2 le_rfl
+      (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (0 : ℝ) < 1 / 10)
+  refine ⟨s, hs, E, hE, hEb, hk, h2, ?_, hsm⟩
+  change 9 / 10 ≤ TotalVariation.tvSup (fwdLaw pm (geomGrid 1 2) 1)
+    (algLaw zeroVar (detMean (pfLin (geomGrid 1 2)) (pfCoeff (geomGrid 1 2)) s) _ 2 1)
+  linarith
 
 /-! ### DF-9: Gaussian data, uniform grid, constant score error -/
 

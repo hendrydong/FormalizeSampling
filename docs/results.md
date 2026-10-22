@@ -77,7 +77,14 @@ $`u_k = e^{2t_k} - 1`$.
   explicit distance of the exact-score deterministic output under a coupling ($`W_\infty`$, $`W_2`$
   bounds); comparison with the data itself is not proved. Li–Wei–Chen–Chi suggest a Wasserstein
   metric as a way around their example; DF-9 states the pairing of TV-far and transport-close as a
-  theorem.
+  theorem. Convolving both the learned output $`q_k`$ and the exact-score output $`q^*_k`$ with one
+  Gaussian step $`\mathcal{N}(0, \tau I)`$ turns the coupling bound $`B`$ into
+  $`\mathrm{KL}(\mathcal{N}_\tau * q_k \Vert \mathcal{N}_\tau * q^*_k) \le B^2/(2\tau)`$ and, by
+  Pinsker, $`\mathrm{TV}(\mathcal{N}_\tau * q_k, \mathcal{N}_\tau * q^*_k) \le B/(2\sqrt{\tau})`$;
+  the learned score needs no regularity, and no bound against the data is proved. This is the
+  standard Gaussian-regularisation bound (joint convexity of KL, as for the proximal sampler in
+  PX-2); adding a little noise to pass from a Wasserstein bound for a deterministic sampler to KL or
+  TV is the device of Chen–Chewi–Lee–Li–Lu–Salim (2023, §4) and Lyu–Chen–Feng (2023, Lemma 12).
 - **Reverse variance (DF-4)**: with reverse variance $`\sigma_k^2 = \beta_k`$, on a grid that is
   geometric up to some index ($`u_{k+1} - u_k \le \kappa u_k`$, $`1 \le \kappa u_m \le 1 + \kappa`$)
   and arbitrary afterwards, the discretisation error is bounded by a constant depending on
@@ -160,7 +167,18 @@ $`u_k = e^{2t_k} - 1`$.
   draws, possibly made by an inexact inner sampler, as in reverse diffusion Monte Carlo (rdMC;
   Huang–Dong–Hao–Ma–Zhang 2024). The squared bias of the inner sampler's mean is bounded by a
   coupling or, for a $`\sigma^2`$-sub-Gaussian exact posterior, by $`2\sigma^2`$ times its KL
-  error (cf. their Eqs. (17)–(18)).
+  error (cf. their Eqs. (17)–(18)). For a single Gaussian posterior draw
+  $`y \sim \mathcal{N}(x, tI)`$, centred at the current state with known covariance, and plug-in
+  drift $`b(x) + c(y - x)`$, the one-step law is $`\mathcal{N}(x + h b(x), (2h + (hc)^2 t) I)`$: the
+  drift noise adds variance $`(hc)^2 t`$. If $`(hc)^2 t \le 2h`$, injecting variance
+  $`2h - (hc)^2 t`$ instead of $`2h`$ makes the one-step law equal to the exact-drift EM step at
+  every $`x`$ ($`\mathrm{KL} = \mathrm{TV} = 0`$). Without this correction, for $`h \gt 0`$, the KL
+  from the random-oracle step to the EM step is $`d(u - \log(1 + u))/2 \le d u^2/2`$ with
+  $`u = h c^2 t/2`$, i.e. $`O(d h^2)`$ for fixed $`c, t`$, against the conditional-KL bound
+  $`d u/2 = d h c^2 t/4`$. Both are Gaussian instances of stochastic-gradient MCMC facts: zero-mean
+  drift noise enters one step at second order in the step size (Welling–Teh 2011, §3), and
+  subtracting its covariance from the injected noise makes the total noise exact
+  (Ahn–Korattikara–Welling 2012; Chen–Fox–Guestrin 2014, Eq. (13); Ma–Chen–Fox 2015, Eq. (9)).
 
 **Flows (FL-1 … FL-6, DT-1)**
 - KL first variation; exact and approximate dissipation; decay with additive error (FL-4,

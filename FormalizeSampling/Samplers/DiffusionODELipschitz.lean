@@ -48,11 +48,31 @@ quadratic transport cost of a coupling `Γ` is `sqCostPi Γ = ∫⁻ |x - y|² d
   the exact-score deterministic output `q*_1` with `|x - x*| ≤ |b_2| ε` almost surely
   (`W_∞, W_2 ≤ |b_2| ε`). Uniform score accuracy controls the deterministic sampler in transport
   distance, not in TV.
+* `klDiv_forwardKernelPi_comp_le_sqCostPi`, `klDiv_forwardKernelPi_comp_detOutput_le`,
+  `klDiv_and_tvSup_forwardKernelPi_comp_detMean_le` (**terminal-step Gaussian smoothing**):
+  convolving both the learned output `q_k` and the exact-score output `q*_k` with one Gaussian
+  step `N(0, σ2 I)` (variance `σ2 > 0`, `forwardKernelPi σ2`) turns the `W_2` stability bound
+  `B_k` into `KL(N_{σ2} ∘ₘ q_k ‖ N_{σ2} ∘ₘ q*_k) ≤ B_k² / (2 σ2)` and, by Pinsker,
+  `TV(N_{σ2} ∘ₘ q_k, N_{σ2} ∘ₘ q*_k) ≤ B_k / (2 √σ2)`. The learned score `s` needs no
+  regularity; the Lipschitz hypothesis is on the exact-score maps, through `B_k`.
+* `smooth_separation_tv_far_terminal_smoothed_close` (**TV-far from the data, close to the
+  exact-score output after smoothing**): in the setting of `smooth_separation_tv_far_w2_close`
+  there is one analytic `ε`-accurate learned score with `TV(p_1, q_1) ≥ 1 - η` and, for every
+  `σ2 > 0`, `KL(N_{σ2} ∘ₘ q_1 ‖ N_{σ2} ∘ₘ q*_1) ≤ (|b_2| ε)² / (2 σ2)` and
+  `TV(N_{σ2} ∘ₘ q_1, N_{σ2} ∘ₘ q*_1) ≤ |b_2| ε / (2 √σ2)`. The lower bound is against the data
+  marginal `p_1`, the upper bounds against the smoothed exact-score output.
 
 Relation to the literature: the pairing is implicit in the example of Li–Wei–Chen–Chi (2023,
 arXiv:2306.09251, §3.2), who suggest a Wasserstein metric as a way around their TV counterexample.
 The coupling bound is a discrete Grönwall-type stability estimate; for the continuous-time ODE and
-Lipschitz test functions, compare Beltran-Velez et al. (2026, arXiv:2606.19162, Prop. 3.2).
+Lipschitz test functions, compare Beltran-Velez et al. (2026, arXiv:2606.19162, Prop. 3.2). The
+terminal-smoothing bound is the standard Gaussian-regularisation estimate (joint convexity of KL
+and `KL(N(x, σ2 I) ‖ N(x', σ2 I)) = |x - x'|² / (2 σ2)`; in the library
+`ProximalRegularization.klDiv_forwardKernelPi_comp_le_coupling`; cf. the convexity principle of
+Altschuler–Chewi 2023, arXiv:2311.14520, Lemma 3.6). Adding a little Gaussian noise to pass from
+a Wasserstein bound for a deterministic sampler to KL or TV is the device of
+Chen–Chewi–Lee–Li–Lu–Salim (2023, arXiv:2305.11798, §4, with a Langevin corrector) and of
+Lyu–Chen–Feng (2023, arXiv:2308.11449, Lemma 12, one terminal smoothing step).
 
 ## Not proved here
 
@@ -66,6 +86,9 @@ Lipschitz test functions, compare Beltran-Velez et al. (2026, arXiv:2606.19162, 
   only the Gaussian example is.
 * No TV or KL bound under a `C¹`-closeness assumption on the learned maps (change of variables
   for the perturbed flow); see `Flow/DeterministicStepPi.lean` for the one-step density formula.
+* No bound against the data after smoothing: neither `TV(N_{σ2} ∘ₘ p_1, N_{σ2} ∘ₘ q_1)` nor
+  `TV(p_1, N_{σ2} ∘ₘ q_1)` is bounded (that needs the exact-score discretisation error, and the
+  smoothing itself changes the law); the smoothed bounds grow without limit as `σ2 → 0`.
 -/
 
 @[expose] public section
@@ -432,5 +455,127 @@ theorem smooth_separation_tv_far_w2_close (μ : Measure (Fin d → ℝ)) [IsProb
       (fun y => eDist_detMean_le A b _ (exactScore μ t) 2 y hε.le (hacc 2 y)))
   funext y j
   simp [detMean, smoothScore, exactScore, show i ≠ 2 by omega]
+
+/-! ### Terminal-step Gaussian smoothing converts `W_2` stability into `KL` and `TV` bounds -/
+
+/-- **Gaussian smoothing of a coupling.** For `σ2 > 0` and any finite coupling `Γ` of `(ρ, μ)` on
+`Fin d → ℝ`, convolving both laws with `N(0, σ2 I)` (`forwardKernelPi σ2`) bounds their KL
+divergence by the quadratic transport cost divided by `2 σ2`:
+`KL(N_{σ2} ∘ₘ ρ ‖ N_{σ2} ∘ₘ μ) ≤ (2 σ2)⁻¹ · sqCostPi Γ`. This is
+`ProximalRegularization.klDiv_forwardKernelPi_comp_le_coupling` with the right-hand side written
+as `sqCostPi Γ`. -/
+theorem klDiv_forwardKernelPi_comp_le_sqCostPi {σ2 : ℝ} (hσ : 0 < σ2)
+    {ρ μ : Measure (Fin d → ℝ)} (Γ : Measure ((Fin d → ℝ) × (Fin d → ℝ))) [IsFiniteMeasure Γ]
+    (h1 : Γ.map Prod.fst = ρ) (h2 : Γ.map Prod.snd = μ) :
+    klDiv (forwardKernelPi σ2 ∘ₘ ρ) (forwardKernelPi σ2 ∘ₘ μ) ≤
+      ENNReal.ofReal (2 * σ2)⁻¹ * sqCostPi Γ := by
+  refine (ProximalRegularization.klDiv_forwardKernelPi_comp_le_coupling hσ Γ h1 h2).trans_eq ?_
+  rw [sqCostPi, ← lintegral_const_mul _ ProximalLogConcaveRatePi.measurable_ofReal_sqDist]
+  refine lintegral_congr fun p => ?_
+  rw [← ENNReal.ofReal_mul (by positivity), inv_mul_eq_div]
+
+/-- **Terminal-step smoothing of a deterministic sampler (`KL` form).** Under the hypotheses of
+`exists_coupling_detOutput`, convolving the learned and reference deterministic outputs
+`q_k = algLaw 0 m N k` and `q'_k = algLaw 0 m' N k` with a terminal Gaussian step `N(0, σ2 I)`
+(`σ2 > 0`) turns the `W_2` stability bound `B_k = lipBound L δ N k` into a `KL` guarantee:
+`KL(N_{σ2} ∘ₘ q_k ‖ N_{σ2} ∘ₘ q'_k) ≤ B_k² / (2 σ2)`, with **no** Lipschitz or smoothness
+assumption on the learned maps `m_i`. -/
+theorem klDiv_forwardKernelPi_comp_detOutput_le {m m' : ℕ → (Fin d → ℝ) → Fin d → ℝ}
+    (hm : ∀ k, Measurable (m k)) (hm' : ∀ k, Measurable (m' k)) {L δ : ℕ → ℝ} {N k : ℕ}
+    (hk : k ≤ N) (hL0 : ∀ i, k < i → i ≤ N → 0 ≤ L i)
+    (hLip : ∀ i, k < i → i ≤ N → ∀ x y, eDist (m' i x) (m' i y) ≤ L i * eDist x y)
+    (hδ : ∀ i, k < i → i ≤ N → ∀ y, eDist (m i y) (m' i y) ≤ δ i) {σ2 : ℝ} (hσ : 0 < σ2) :
+    klDiv (forwardKernelPi σ2 ∘ₘ algLaw zeroVar m hm N k)
+        (forwardKernelPi σ2 ∘ₘ algLaw zeroVar m' hm' N k) ≤
+      ENNReal.ofReal (lipBound L δ N k ^ 2 / (2 * σ2)) := by
+  obtain ⟨Γ, hΓ, h1, h2, -, hcost⟩ := exists_coupling_detOutput hm hm' hk hL0 hLip hδ
+  refine (klDiv_forwardKernelPi_comp_le_sqCostPi hσ Γ h1 h2).trans ?_
+  refine (mul_le_mul_of_nonneg_left hcost zero_le).trans_eq ?_
+  rw [← ENNReal.ofReal_mul (by positivity), inv_mul_eq_div]
+
+/-- **Terminal-step smoothing of a score-affine deterministic sampler (`KL` and `TV`).** Under the
+hypotheses of `exists_coupling_detMean` (uniform score accuracy `ε_i ≥ 0` and `L_i`-Lipschitz
+exact-score maps), convolve the learned output `q_k = algLaw 0 (detMean A b s) N k` and the
+exact-score output `q*_k = algLaw 0 (detMean A b ∇ log p) N k` with `N(0, σ2 I)` (`σ2 > 0`). Then
+`KL(N_{σ2} ∘ₘ q_k ‖ N_{σ2} ∘ₘ q*_k) ≤ B² / (2 σ2)` and, by Pinsker,
+`TV(N_{σ2} ∘ₘ q_k, N_{σ2} ∘ₘ q*_k) ≤ √(B² / (4 σ2))`, where
+`B = lipBound L (fun i => |b i| * ε i) N k` does not depend on the regularity of the learned
+score `s`. -/
+theorem klDiv_and_tvSup_forwardKernelPi_comp_detMean_le (μ : Measure (Fin d → ℝ)) (t : ℕ → ℝ)
+    {A : ℕ → (Fin d → ℝ) → Fin d → ℝ} (hA : ∀ k, Measurable (A k)) (b : ℕ → ℝ)
+    {s : ℕ → (Fin d → ℝ) → Fin d → ℝ} (hs : ∀ k, Measurable (s k)) {ε L : ℕ → ℝ} {N k : ℕ}
+    (hk : k ≤ N) (hε0 : ∀ i, k < i → i ≤ N → 0 ≤ ε i)
+    (hacc : ∀ i, k < i → i ≤ N → ∀ y,
+      ∑ j, (s i y j - score (fwdDensity μ t i) y j) ^ 2 ≤ ε i ^ 2)
+    (hL0 : ∀ i, k < i → i ≤ N → 0 ≤ L i)
+    (hLip : ∀ i, k < i → i ≤ N → ∀ x y,
+      eDist (detMean A b (exactScore μ t) i x) (detMean A b (exactScore μ t) i y) ≤
+        L i * eDist x y)
+    {σ2 : ℝ} (hσ : 0 < σ2) :
+    klDiv (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b s) (measurable_detMean hA b hs) N k)
+        (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b (exactScore μ t))
+          (measurable_detMean hA b (measurable_exactScore μ t)) N k) ≤
+      ENNReal.ofReal (lipBound L (fun i => |b i| * ε i) N k ^ 2 / (2 * σ2)) ∧
+    TotalVariation.tvSup
+        (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b s) (measurable_detMean hA b hs) N k)
+        (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b (exactScore μ t))
+          (measurable_detMean hA b (measurable_exactScore μ t)) N k) ≤
+      Real.sqrt (lipBound L (fun i => |b i| * ε i) N k ^ 2 / (4 * σ2)) := by
+  have hKL := klDiv_forwardKernelPi_comp_detOutput_le (measurable_detMean hA b hs)
+    (measurable_detMean hA b (measurable_exactScore μ t)) hk hL0 hLip
+    (fun i hi hiN y => eDist_detMean_le A b s (exactScore μ t) i y (hε0 i hi hiN) (hacc i hi hiN y))
+    hσ
+  refine ⟨hKL, ?_⟩
+  refine (Pinsker.tvSup_le_sqrt_of_klDiv_le_ofReal hKL).trans_eq ?_
+  rw [div_div, show 2 * σ2 * 2 = 4 * σ2 by ring]
+
+/-- **TV-far from the data, close to the exact-score output after terminal smoothing.** In the
+setting of `smooth_separation_tv_far_w2_close` there is one analytic, uniformly `ε`-accurate
+learned score `s` such that the deterministic output `q_1` satisfies `TV(p_1, q_1) ≥ 1 - η` and,
+for every `σ2 > 0`, convolving `q_1` and the exact-score deterministic output `q*_1` with
+`N(0, σ2 I)` gives `KL(N_{σ2} ∘ₘ q_1 ‖ N_{σ2} ∘ₘ q*_1) ≤ (|b_2| ε)² / (2 σ2)` and
+`TV(N_{σ2} ∘ₘ q_1, N_{σ2} ∘ₘ q*_1) ≤ |b_2| ε / (2 √σ2)`. The lower bound is against the data
+marginal `p_1`, the upper bounds against the smoothed exact-score output. The upper bounds do not
+involve the Lipschitz constant of the score error, which DF-7 bounds below by `(2^m - 1)/|b_2|`. -/
+theorem smooth_separation_tv_far_terminal_smoothed_close (μ : Measure (Fin d → ℝ))
+    [IsProbabilityMeasure μ] (hd : 0 < d) {t : ℕ → ℝ} (ht : t 0 < t 1)
+    {A : ℕ → (Fin d → ℝ) → Fin d → ℝ} (hA : ∀ k, Measurable (A k)) {b : ℕ → ℝ} (hb : b 2 ≠ 0)
+    {N : ℕ} (hN : 2 ≤ N) {ε : ℝ} (hε : 0 < ε) {η : ℝ} (hη : 0 < η) :
+    ∃ (s : ℕ → (Fin d → ℝ) → Fin d → ℝ) (hs : ∀ k, Measurable (s k))
+      (E : (Fin d → ℝ) → Fin d → ℝ),
+      ContDiff ℝ ⊤ E ∧ (∀ z, ∑ i, E z i ^ 2 ≤ ε ^ 2) ∧
+      (∀ k, k ≠ 2 → ∀ y, s k y = score (fwdDensity μ t k) y) ∧
+      (∀ y, s 2 y = score (fwdDensity μ t 2) y + E (detMean A b (exactScore μ t) 2 y)) ∧
+      (∀ k y, ∑ i, (s k y i - score (fwdDensity μ t k) y i) ^ 2 ≤ ε ^ 2) ∧
+      1 - η ≤ TotalVariation.tvSup (fwdLaw μ t 1)
+        (algLaw zeroVar (detMean A b s) (measurable_detMean hA b hs) N 1) ∧
+      ∀ σ2 : ℝ, 0 < σ2 →
+        klDiv
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b s) (measurable_detMean hA b hs) N 1)
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b (exactScore μ t))
+            (measurable_detMean hA b (measurable_exactScore μ t)) N 1) ≤
+          ENNReal.ofReal ((|b 2| * ε) ^ 2 / (2 * σ2)) ∧
+        TotalVariation.tvSup
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b s) (measurable_detMean hA b hs) N 1)
+          (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b (exactScore μ t))
+            (measurable_detMean hA b (measurable_exactScore μ t)) N 1) ≤
+          |b 2| * ε / (2 * Real.sqrt σ2) := by
+  obtain ⟨s, hs, E, hE, hEb, hk, h2, hacc, hTV, Γ, hΓ, h1, h2', -, hcost⟩ :=
+    smooth_separation_tv_far_w2_close μ hd ht hA hb hN hε hη
+  refine ⟨s, hs, E, hE, hEb, hk, h2, hacc, hTV, fun σ2 hσ => ?_⟩
+  have hKL : klDiv
+      (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b s) (measurable_detMean hA b hs) N 1)
+      (forwardKernelPi σ2 ∘ₘ algLaw zeroVar (detMean A b (exactScore μ t))
+        (measurable_detMean hA b (measurable_exactScore μ t)) N 1) ≤
+      ENNReal.ofReal ((|b 2| * ε) ^ 2 / (2 * σ2)) := by
+    refine (klDiv_forwardKernelPi_comp_le_sqCostPi hσ Γ h1 h2').trans ?_
+    refine (mul_le_mul_of_nonneg_left hcost zero_le).trans_eq ?_
+    rw [← ENNReal.ofReal_mul (by positivity), inv_mul_eq_div]
+  refine ⟨hKL, ?_⟩
+  refine (Pinsker.tvSup_le_sqrt_of_klDiv_le_ofReal hKL).trans_eq ?_
+  have hbε : 0 ≤ |b 2| * ε := by positivity
+  rw [div_div, show 2 * σ2 * 2 = (2 * Real.sqrt σ2) ^ 2 by
+    rw [mul_pow, Real.sq_sqrt hσ.le]; ring,
+    Real.sqrt_div (sq_nonneg _), Real.sqrt_sq hbε, Real.sqrt_sq (by positivity)]
 
 end FormalizeSampling.DiffusionODELipschitz
