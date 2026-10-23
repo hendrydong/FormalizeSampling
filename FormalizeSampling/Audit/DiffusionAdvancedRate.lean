@@ -300,7 +300,7 @@ theorem gaussian_witness_one {N : ℕ} (hN : 2 ≤ N) :
     quarterGrid_strictMono (by omega : 1 ≤ N) (by norm_num : (0 : ℝ) < 1 / 4) exp_half_le_two
     fun k _ _ => quarterGrid_unif k
   rw [quarterGrid_sub] at hlo hpath
-  rw [gaussVar_one, sub_self, zero_mul, zero_add] at hup
+  rw [DiffusionODELipschitz.gaussVar_one, sub_self, zero_mul, zero_add] at hup
   have hN1 : (1 : ℝ) ≤ (N : ℝ) - 1 := by
     have : (2 : ℝ) ≤ N := by exact_mod_cast hN
     linarith

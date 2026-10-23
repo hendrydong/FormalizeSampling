@@ -12,8 +12,8 @@ gradient flow, deterministic steps, the SVGD objective) and DDPM/DDIM-type diffu
 both guarantees and counterexamples.
 
 Every core statement names the divergence and its direction, the law under which an error is
-averaged, the quantifier and the object certified. About 91,000 lines of Lean, 3,800 documented
-theorems and 53 core results: 42 Verified, 8 formal counterexamples, 3 Conditional.
+averaged, the quantifier and the object certified. About 94,000 lines of Lean, 4,000 documented
+theorems and 54 core results: 43 Verified, 8 formal counterexamples, 3 Conditional.
 
 - Full results by area: [`docs/results.md`](docs/results.md)
 - Status, hypotheses and Lean names of every core result:
@@ -45,7 +45,7 @@ that a step is tight or necessary.
 | Move | What it provides | Main modules | Registry IDs |
 |---|---|---|---|
 | Comparison of laws | Pinsker and the two TV normalisations, KL chain rule and data processing, tensorisation, Gaussian KL, lower semicontinuity, extension from warm starts to every start with finite KL | [`Foundations/Pinsker`](FormalizeSampling/Foundations/Pinsker.lean), [`Foundations/KLChainRule`](FormalizeSampling/Foundations/KLChainRule.lean), [`Foundations/KLWarmApprox`](FormalizeSampling/Foundations/KLWarmApprox.lean), [`Foundations/GaussianKL`](FormalizeSampling/Foundations/GaussianKL.lean) | KL-1 … KL-4 |
-| Error accumulation | compare the algorithm's chain with an exact chain step by step: initial mismatch plus summed discretisation and oracle errors, by TV telescoping, by the KL chain rule and one Pinsker step, or by couplings | [`Kernels/ErrorPropagationKL`](FormalizeSampling/Kernels/ErrorPropagationKL.lean), [`Kernels/ErrorDecomposition`](FormalizeSampling/Kernels/ErrorDecomposition.lean), [`Samplers/GaussianIncrementPi`](FormalizeSampling/Samplers/GaussianIncrementPi.lean), [`Samplers/DiffusionMain`](FormalizeSampling/Samplers/DiffusionMain.lean), [`Samplers/DiffusionPath`](FormalizeSampling/Samplers/DiffusionPath.lean) | KR-1, GI-1, GI-2, DF-1, DF-2, DF-4, DF-5, DF-9 |
+| Error accumulation | compare the algorithm's chain with an exact chain step by step: initial mismatch plus summed discretisation and oracle errors, by TV telescoping, by the KL chain rule and one Pinsker step, or by couplings | [`Kernels/ErrorPropagationKL`](FormalizeSampling/Kernels/ErrorPropagationKL.lean), [`Kernels/ErrorDecomposition`](FormalizeSampling/Kernels/ErrorDecomposition.lean), [`Samplers/GaussianIncrementPi`](FormalizeSampling/Samplers/GaussianIncrementPi.lean), [`Samplers/DiffusionMain`](FormalizeSampling/Samplers/DiffusionMain.lean), [`Samplers/DiffusionPath`](FormalizeSampling/Samplers/DiffusionPath.lean) | KR-1, GI-1, GI-2, DF-1, DF-2, DF-4, DF-5, DF-9, DF-10 |
 | Contraction | the exact kernel or flow brings every admissible law closer to the target: log-Sobolev inequalities (Gaussian, Gross, tensorisation, Holley–Stroock, Bakry–Émery), LSI plus heat flow gives a KL contraction, couplings and shifted composition | [`Foundations/BakryEmeryGeneralPi`](FormalizeSampling/Foundations/BakryEmeryGeneralPi.lean), [`Foundations/HolleyStroock`](FormalizeSampling/Foundations/HolleyStroock.lean), [`Samplers/ProximalGeneralLSIPi`](FormalizeSampling/Samplers/ProximalGeneralLSIPi.lean), [`Samplers/RGOCouplingWeak`](FormalizeSampling/Samplers/RGOCouplingWeak.lean), [`Flow/OULangevinDecayPi`](FormalizeSampling/Flow/OULangevinDecayPi.lean) | KL-5, KL-6, PX-2 … PX-6, CE-07 |
 | Differentiation along a curve | $`\frac{d}{dt} \mathrm{KL}`$ along a continuity equation, Fisher dissipation, approximate velocities, Grönwall with a source, de Bruijn along the forward and backward heat flows, one-step descent for $`\mathrm{id} + \eta v`$ | [`Identities/KLTransportVariation`](FormalizeSampling/Identities/KLTransportVariation.lean), [`Flow/KLDissipation`](FormalizeSampling/Flow/KLDissipation.lean), [`Flow/ApproximateVelocity`](FormalizeSampling/Flow/ApproximateVelocity.lean), [`Flow/DeterministicStepPi`](FormalizeSampling/Flow/DeterministicStepPi.lean), [`Foundations/HeatFlowDeBruijnPi`](FormalizeSampling/Foundations/HeatFlowDeBruijnPi.lean) | FL-1 … FL-4, DT-1, CE-08 |
 | Identification of the law | a kernel, curve or particle system has the law the analysis assumes: Bayes reverse kernels (the RGO among them), Metropolis–Hastings invariance, weak Fokker–Planck and continuity equations (existence, uniqueness, DiPerna–Lions) without SDE theory, equal one-time marginals | [`Kernels/ReverseKernel`](FormalizeSampling/Kernels/ReverseKernel.lean), [`Samplers/ProximalPi`](FormalizeSampling/Samplers/ProximalPi.lean), [`Samplers/MetropolisHastings`](FormalizeSampling/Samplers/MetropolisHastings.lean), [`Flow/FokkerPlanckUniqueness`](FormalizeSampling/Flow/FokkerPlanckUniqueness.lean), [`Flow/NoiseScoreEquivalence`](FormalizeSampling/Flow/NoiseScoreEquivalence.lean) | KR-2, PX-1, MH-1, ID-3, ID-4, FL-5, FL-6, PT-1, CE-01 |
@@ -76,7 +76,8 @@ distinctions visible:
   $`\Theta(h^2)`$ while the path KL is of order at least $`h`$ (DF-5, DF-8).
 - **Which score accuracy suffices.** $`L^2(p_k)`$ accuracy suffices for DDPM (DF-1); uniform
   accuracy does not give TV accuracy for deterministic samplers (DF-3, DF-7) but controls a
-  coupling distance to the exact-score output (DF-9).
+  coupling distance to the exact-score output (DF-9); with a small Lipschitz constant as well, it
+  still fails over a long horizon (DF-10).
 
 ## Main results
 
@@ -98,16 +99,15 @@ Diffusion-model guarantees are usually stated in terms of score accuracy. For th
 deterministic sampler by a rounding error, small in $`L^2`$, that puts the output at total-variation
 distance 1 from Gaussian data, and [Li–Di–Gu (2024, Thm 3.1)](https://arxiv.org/abs/2410.14237) give
 a smooth score within $`\varepsilon`$ of the true score everywhere for which the continuous-time
-probability-flow ODE stays at total-variation distance at least $`1/(4\pi)`$ from Gaussian data.
-Lean proves the following version. For every data law with finite second moment, there are learned
-scores within $`\varepsilon`$ of the true score everywhere for which the deterministic sampler ends
-at total-variation distance $`\ge 1 - \eta`$ from $`p_\delta`$, while DDPM with the same score and
-reverse variance $`\sigma_k^2 = \beta_k/\alpha_k^2`$ keeps its end-to-end KL guarantee (DF-1). The
-error can even be an analytic function of the exact update, placed at the last step ($`k = 2`$). We
-have not found an analytic error with total-variation distance arbitrarily close to 1, for every
-data law with finite second moment, stated before; the price is a large Lipschitz constant. Lean
-proves a lower bound $`(2^m - 1)/\lvert b_2 \rvert`$ on it, where $`m`$ is the number of iterations
-of $`u \mapsto u - \sin(2\pi u)/(2\pi)`$ in the construction, chosen non-explicitly; its growth as
+probability-flow ODE stays a fixed total-variation distance away from Gaussian data, however small
+$`\varepsilon`$ is. Lean proves the following version. For every data law with finite second moment,
+there are learned scores within $`\varepsilon`$ of the true score everywhere for which the
+deterministic sampler ends at total-variation distance $`\ge 1 - \eta`$ from $`p_\delta`$, while
+DDPM with the same score and reverse variance $`\sigma_k^2 = \beta_k/\alpha_k^2`$ keeps its
+end-to-end KL guarantee (DF-1). The error can even be an analytic function of the exact update,
+placed at the last step ($`k = 2`$). The price is a large Lipschitz constant. Lean proves a lower
+bound $`(2^m - 1)/\lvert b_2 \rvert`$ on it, where $`m`$ is the number of iterations of
+$`u \mapsto u - \sin(2\pi u)/(2\pi)`$ in the construction, chosen non-explicitly; its growth as
 $`\eta \to 0`$ is observed only numerically. For this error the failure is one of concentration, not
 displacement: under an explicit coupling the deterministic output stays within
 $`\lvert b_2 \rvert \cdot \varepsilon`$ of the exact-score deterministic output (a
@@ -125,9 +125,23 @@ DDPM's noise lets them escape, and a score error with the right directional stru
 equilibrium near the midpoint instantaneously stable. The first figure is a one-dimensional
 numerical instance: the data has two modes, the score error is below 0.07, has Lipschitz constant
 0.7 and is nonzero only near the midpoint, and the deterministic sampler puts 23% of its output
-between the modes, where the data has 3%; DDPM with the same score does not.
-*DF-3, DF-7, DF-9 (Verified). The figures are numerical; the construction in the first is not
-formalised.*
+between the modes, where the data has 3%; DDPM with the same score does not. For standard Gaussian
+data the forward process is stationary and the exact probability-flow velocity vanishes, so the flow
+does not correct a persistent error; this is the setting of
+[Li–Di–Gu (2024, Thm 3.1)](https://arxiv.org/abs/2410.14237). Lean proves a version for discrete
+steps (DF-10): an error that is at most $`\varepsilon`$ in sup norm and $`\varepsilon`$-Lipschitz,
+acting over a horizon of at most $`A/\varepsilon`$ ($`A`$ independent of $`\varepsilon`$), makes the
+deterministic sampler collapse while DDPM with the same score stays within total-variation distance
+$`\eta`$ of $`p_\delta`$. For standard Gaussian data the deterministic output is at total-variation
+distance $`\ge 1 - \eta`$. For two atoms $`(\delta_{-a} + \delta_a)/2`$ the error is switched on at
+high noise only, where the forward law is close to $`\mathcal{N}(0, 1)`$ and the exact step close to
+the identity, and the deterministic output puts mass $`\ge 1 - \eta`$ on a slab around the midpoint
+where $`p_\delta`$ puts mass $`\le \eta`$. This two-atom construction differs from the figure: the
+data are atoms, the error is a clamp acting on a wide window rather than near the midpoint only, it
+acts at high noise only, and the output collapses onto the midpoint rather than gaining a third
+mode.
+*DF-3, DF-7, DF-9, DF-10 (Verified). The figures are numerical; the construction in the first is
+not formalised; DF-10 uses its own.*
 
 ![Two-mode data and a score error below 0.07: DDPM is right, the deterministic sampler outputs a third mode](showcase/figures/ode_third_mode.png)
 
@@ -298,7 +312,7 @@ Each row says which steps of a published analysis are formalised here and with w
 | [Benton–De Bortoli–Doucet–Deligiannidis (2024)](https://arxiv.org/abs/2308.03686) | exponential integrator with early stopping | a version of Thm 2 for the Tweedie-mean sampler by heat-flow entropy, without stochastic localisation; path-KL lower bounds related to its §4 | DF-1, DF-5, DF-6 Verified |
 | [Conforti–Durmus–Gentiloni Silveri (2023)](https://arxiv.org/abs/2308.12240); [Koike (2026)](https://arxiv.org/abs/2605.18040) | samplers with step variance $`\beta`$ | discretisation bounds independent of $`T`$ and $`N`$ by an exact per-step formula and the trace Cramér–Rao bound, without Itô calculus; Fisher decay along the heat flow; the Föllmer process and kinetic OU not formalised | DF-4, DF-5, KL-5 Verified |
 | [Li–Yan (2024)](https://arxiv.org/abs/2409.18959); [Jiao–Zhou–Li (2025)](https://arxiv.org/abs/2510.27562); [Li–Cai (2024)](https://arxiv.org/abs/2410.23285); [Sun–Poor–Zhang (2026)](https://arxiv.org/abs/2601.13602) | DDPM: output KL versus path KL | path-KL lower bounds of order $`dh`$ for every mean map; Gaussian-data output KL of order $`dh^2`$; a per-step lower bound for every data law; auxiliary-chain upper bounds, schedules and Gaussian extremality not formalised | DF-5, DF-6, DF-8 Verified |
-| [Li–Wei–Chen–Chi (2023)](https://arxiv.org/abs/2306.09251); [Li–Di–Gu (2024)](https://arxiv.org/abs/2410.14237) | deterministic (probability-flow, DDIM) samplers | a version of the §3.2 example, for every data law with finite second moment; a discrete-time analogue of Li–Di–Gu Thm 3.1 with an analytic one-step error; the Wasserstein remark as a coupling bound; the TV convergence bounds not formalised | DF-3, DF-7, DF-9 Verified |
+| [Li–Wei–Chen–Chi (2023)](https://arxiv.org/abs/2306.09251); [Li–Di–Gu (2024)](https://arxiv.org/abs/2410.14237) | deterministic (probability-flow, DDIM) samplers | a version of the §3.2 example, for every data law with finite second moment; a discrete-time analogue of Li–Di–Gu Thm 3.1 with an analytic one-step error, and its stationary-Gaussian setting with a clamp error acting over a horizon of order $`1/\varepsilon`$; the Wasserstein remark as a coupling bound; the TV convergence bounds not formalised | DF-3, DF-7, DF-9, DF-10 Verified |
 | [Nie et al. (2024)](https://arxiv.org/abs/2311.01410); [Ashiq et al. (2026)](https://arxiv.org/abs/2605.06831) | SDE versus ODE runs; dynamics between two modes | special cases of Nie et al.: de Bruijn for two heat-flow runs (Thm 3.1 with zero drift), KL invariance under bijections (component of Thm 3.2); the non-strict data-processing step behind Thm 3.3 (its strict inequality and the Cycle-SDE kernels not formalised); Ashiq et al. not formalised | KL-2, KL-4 Verified; the heat-flow de Bruijn identity holds under an explicit regularity hypothesis (used in KL-5 and PX-2) |
 | [Pidstrigach (2022)](https://arxiv.org/abs/2206.01018); [Li–Chen–Li (2024)](https://arxiv.org/abs/2401.04856); [Gu et al. (2023)](https://arxiv.org/abs/2310.02664) | reverse diffusion with the exact empirical score | memorisation for the discretised DDPM sampler with early stopping (a discretised, approximate version of Pidstrigach Cor. 1 and Li–Chen–Li Thm 4.3); the empirical score through Tweedie; continuous-time support results and Girsanov not formalised | DF-2, DF-1, SE-3 Verified |
 | [Lee–Shen–Tian (2021)](https://arxiv.org/abs/2010.03106) | proximal sampler with the restricted Gaussian oracle (RGO) | the RGO as Bayes reverse kernel and invariance (Lemma 1); Lemma 4's one-step bound for every coupling; the case $`\mu = 0`$ of Lemma 2; RGO implementations not formalised | PX-1, PX-5 Verified; the coupling bound has no named hypothesis (listed under PX-2) |
@@ -337,7 +351,7 @@ Details: [`docs/statement_audit.md`](docs/statement_audit.md).
 
 | Area | Registry rows | Status |
 |---|---|---|
-| Diffusion models (DDPM/DDIM, memorisation, variance, path vs output) | DF-1 … DF-9 | 9 Verified |
+| Diffusion models (DDPM/DDIM, memorisation, variance, path vs output) | DF-1 … DF-10 | 10 Verified |
 | Proximal sampler | PX-1 … PX-6 | 5 Verified, 1 Conditional |
 | KL toolkit and log-Sobolev inequalities | KL-1 … KL-6 | 6 Verified |
 | Flows, Fokker–Planck, continuity equation | FL-1 … FL-6, DT-1 | 5 Verified, 2 Conditional |

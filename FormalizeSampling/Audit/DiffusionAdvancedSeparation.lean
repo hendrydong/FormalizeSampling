@@ -3,14 +3,15 @@ module
 public import Mathlib.Analysis.Complex.ExponentialBounds
 public import FormalizeSampling.Samplers.DiffusionMemorization
 public import FormalizeSampling.Samplers.DiffusionODELipschitz
+public import FormalizeSampling.Samplers.DiffusionODEMidpoint
 public import FormalizeSampling.Audit.Diffusion
 
 /-!
-# Statement audit: memorisation and deterministic-sampler witnesses (DF-2, DF-3, DF-7, DF-9)
+# Statement audit: memorisation and deterministic-sampler witnesses (DF-2, DF-3, DF-7, DF-9, DF-10)
 
-Non-vacuity witnesses for the diffusion rows DF-2, DF-3, DF-7 and DF-9: each headline theorem is
-applied to a concrete instance on `Fin 1 → ℝ` with every hypothesis discharged in Lean, and the
-conclusion is made explicit.
+Non-vacuity witnesses for the diffusion rows DF-2, DF-3, DF-7, DF-9 and DF-10: each headline
+theorem is applied to a concrete instance on `Fin 1 → ℝ` with every hypothesis discharged in Lean,
+and the conclusion is made explicit.
 
 * **DF-2** (`DiffusionMemorization.output_concentrates_on_training_set`): training set
   `{0, 1}` (empirical law of two distinct points, no Lebesgue density), radius `ρ = 1/4`,
@@ -28,6 +29,13 @@ conclusion is made explicit.
   `ε`-accurate). The probability-flow output is coupled with `N(0, 1)` (which is here the exact
   deterministic output, and the data law itself) with `|x - x*| ≤ (N - 1)(e - 1) ε` a.s. and
   `∫ |x - x*|² ≤ ((N - 1)(e - 1) ε)²`.
+* **DF-10** (`DiffusionODELongHorizon.pf_ddpm_longHorizon_separation`,
+  `DiffusionODEMidpoint.pf_ddpm_midpoint_separation`): `η = 1/10`, geometric grids with
+  `u_1 = 1` and horizon at most `A/ε`, an error at most `ε` in sup norm and `ε`-Lipschitz
+  (for two atoms, switched on at high noise only). For data `N(0, 1)` the
+  deterministic sampler has `TV(p_1, q_1) ≥ 9/10` and DDPM with the same score `TV ≤ 1/10`; for
+  data `(δ_{-1} + δ_1)/2` the deterministic output puts mass `≥ 9/10` on `{|x| ≤ ρ}` with
+  `ρ ≤ 1/(2√2)`, where `p_1` has mass `≤ 1/10`, `TV(p_1, q_1) ≥ 4/5`, and DDPM has `TV ≤ 1/10`.
 
 ## Main results
 
@@ -36,8 +44,9 @@ conclusion is made explicit.
   `(δ_{-1} + δ_1)/2`, `u_1 = 1`, `r = 2`, `N = 2`, `ε ≤ 1/2` is `≤ 4/5`.
 * `pf_separation_witness` (DF-3), `pf_smooth_separation_witness` (DF-7),
   `pf_smooth_terminal_smoothed_witness` (DF-9 terminal smoothing on the DF-7 instance).
-* `pfGain_one`, `pfCoeff_unifGrid`, `lipBound_unifGrid`, `algVar_pfGain_one`,
-  `pf_coupling_witness` (DF-9).
+* `pfCoeff_unifGrid`, `lipBound_unifGrid`, `algVar_pfGain_one`, `pf_coupling_witness` (DF-9;
+  the gain `pfGain 1 t k = 1` is `DiffusionODELipschitz.pfGain_one`).
+* `pf_longHorizon_witness`, `pf_midpoint_witness` (DF-10).
 
 ## Not proved here
 
@@ -46,6 +55,8 @@ conclusion is made explicit.
   existential.
 * DF-3/DF-7: the DDPM bound `4/5` is far from tight (the actual TV is not computed).
 * DF-9: tightness of the coupling bound for the constant shift is not proved.
+* DF-10: `R`, `ρ`, `A`, `ε₀` and the grids are existential (no numerical values), and the
+  DDPM bound `1/10` comes from choosing `ε` small, not from computing the TV.
 -/
 
 @[expose] public section
@@ -244,13 +255,11 @@ theorem fwdScale_unifGrid {k : ℕ} (hk : 1 ≤ k) : fwdScale unifGrid k = Real.
 theorem pfCoeff_unifGrid {k : ℕ} (hk : 1 ≤ k) : pfCoeff unifGrid k = Real.exp 1 - 1 := by
   rw [pfCoeff, fwdScale_unifGrid hk, Real.exp_neg, inv_inv]
 
-/-- For `N(0, 1)` data the forward variance is `s_k = 1`. -/
-theorem gaussVar_one (t : ℕ → ℝ) (k : ℕ) : gaussVar 1 t k = 1 := by
-  rw [gaussVar]; ring
+@[deprecated DiffusionODELipschitz.gaussVar_one (since := "2026-10-23")]
+alias gaussVar_one := DiffusionODELipschitz.gaussVar_one
 
-/-- For `N(0, 1)` data the probability-flow gain is `g_k = α_k⁻¹ - (α_k⁻¹ - 1) = 1`. -/
-theorem pfGain_one (t : ℕ → ℝ) (k : ℕ) : pfGain 1 t k = 1 := by
-  rw [pfGain, gaussVar_one, div_one, pfCoeff]; ring
+@[deprecated DiffusionODELipschitz.pfGain_one (since := "2026-10-23")]
+alias pfGain_one := DiffusionODELipschitz.pfGain_one
 
 /-- With gains `1` and zero variance the algorithm variance stays `1`. -/
 theorem algVar_pfGain_one (t : ℕ → ℝ) {N k : ℕ} (hk : k ≤ N) :
@@ -259,7 +268,7 @@ theorem algVar_pfGain_one (t : ℕ → ℝ) {N k : ℕ} (hk : k ≤ N) :
   induction j generalizing k with
   | zero => simpa using algVar_self (pfGain 1 t) zeroVar k
   | succ j ih =>
-    rw [algVar_of_lt _ _ (by omega : k < k + (j + 1)), pfGain_one,
+    rw [algVar_of_lt _ _ (by omega : k < k + (j + 1)), DiffusionODELipschitz.pfGain_one,
       show k + (j + 1) = (k + 1) + j by ring, ih (by omega)]
     simp [zeroVar]
 
@@ -270,8 +279,9 @@ theorem lipBound_unifGrid (ε : ℝ) (N : ℕ) :
       ((N - 1 : ℕ) : ℝ) * ((Real.exp 1 - 1) * ε) := by
   have he : 0 ≤ Real.exp 1 - 1 := by linarith [Real.add_one_le_exp (1 : ℝ)]
   rw [lipBound, Finset.sum_congr rfl fun i hi => by
-    rw [Finset.prod_congr rfl fun j _ => by rw [pfGain_one, abs_one], Finset.prod_const_one,
-      one_mul, pfCoeff_unifGrid (by simp only [Finset.mem_Ioc] at hi; omega), abs_of_nonneg he],
+    rw [Finset.prod_congr rfl fun j _ => by rw [DiffusionODELipschitz.pfGain_one, abs_one],
+      Finset.prod_const_one, one_mul,
+      pfCoeff_unifGrid (by simp only [Finset.mem_Ioc] at hi; omega), abs_of_nonneg he],
     Finset.sum_const, Nat.card_Ioc, nsmul_eq_mul]
 
 /-- The learned score `∇ log p_k + ε` (every coordinate shifted by `ε`) for `N(0, 1)` data. -/
@@ -305,5 +315,90 @@ theorem pf_coupling_witness {N : ℕ} (hN : 1 ≤ N) {ε : ℝ} (hε : 0 ≤ ε)
   rw [lipBound_unifGrid] at h3 h4
   rw [algVar_pfGain_one _ hN] at h2
   exact ⟨Γ, hΓ, h1, h2, h3, h4⟩
+
+/-! ### DF-10: long horizon, an error that is small in sup norm and Lipschitz constant -/
+
+section LongHorizon
+
+open FormalizeSampling.DiffusionODELongHorizon FormalizeSampling.DiffusionODEMidpoint
+  FormalizeSampling.DiffusionTwoPoint
+
+/-- **Witness DF-10, Gaussian data.** Data `N(0, 1)` on `ℝ`, perturbed coordinate `0`,
+`η = 1/10`, geometric grids with `u_1 = 1`. There are `R ≥ 1`, `A > 0` and `ε₀ > 0` such that
+for every `ε ∈ (0, ε₀]` some grid `geomGrid 1 r` with horizon `t_N - t_1 ≤ A/ε` and `N ≥ 2` give
+one learned score `∇ log p_k - (ε/R) clip_R` whose error is at most `ε` in sup norm and
+`ε`-Lipschitz, with `TV(p_1, q_1^det) ≥ 9/10` for the probability-flow sampler and
+`TV(p_1, q_1^DDPM) ≤ 1/10`. -/
+theorem pf_longHorizon_witness :
+    ∃ R : ℝ, 1 ≤ R ∧ ∃ A : ℝ, 0 < A ∧ ∃ ε₀ : ℝ, 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ →
+      ∃ r : ℝ, 1 < r ∧ ∃ N : ℕ, 2 ≤ N ∧
+        geomGrid 1 r N - geomGrid 1 r 1 ≤ A / ε ∧
+        (∀ k y, ∑ i, (clampScore (isoGauss 1 1) (geomGrid 1 r) 0 (ε / R) R k y i -
+            score (fwdDensity (isoGauss 1 1) (geomGrid 1 r) k) y i) ^ 2 ≤ ε ^ 2) ∧
+        (∀ k, LipschitzWith ε.toNNReal (fun y =>
+          clampScore (isoGauss 1 1) (geomGrid 1 r) 0 (ε / R) R k y -
+            score (fwdDensity (isoGauss 1 1) (geomGrid 1 r) k) y)) ∧
+        9 / 10 ≤ TotalVariation.tvSup (fwdLaw (isoGauss 1 1) (geomGrid 1 r) 1)
+          (algLaw zeroVar (pfMean (geomGrid 1 r)
+            (clampScore (isoGauss 1 1) (geomGrid 1 r) 0 (ε / R) R))
+            (measurable_detMean (measurable_pfLin _) _
+              (measurable_clampScore _ _ 0 (ε / R) R)) N 1) ∧
+        TotalVariation.tvSup (fwdLaw (isoGauss 1 1) (geomGrid 1 r) 1)
+          (algLaw (ddpmVar (geomGrid 1 r)) (scoreMean (geomGrid 1 r)
+            (clampScore (isoGauss 1 1) (geomGrid 1 r) 0 (ε / R) R))
+            (measurable_scoreMean _ (measurable_clampScore _ _ 0 (ε / R) R)) N 1) ≤ 1 / 10 := by
+  obtain ⟨R, hR, h⟩ := pf_ddpm_longHorizon_separation (d := 1) 0 (by norm_num : (0 : ℝ) < 1 / 10)
+  obtain ⟨A, hA, ε₀, hε₀, h'⟩ := h 1 one_pos
+  refine ⟨R, hR, A, hA, ε₀, hε₀, fun ε hε hεε => ?_⟩
+  obtain ⟨r, hr, N, hN, h0, h1, h2, h3, h4⟩ := h' ε hε hεε
+  exact ⟨r, hr, N, hN, h0, h1, h2, by linarith, h4⟩
+
+/-- **Witness DF-10, two atoms.** Data `(δ_{-1} + δ_1)/2` on `ℝ`, `η = 1/10`, geometric grids
+with `u_1 = 1`, so the two Gaussian components of `p_1` are centred at `±1/√2`. There are
+`R ≥ 1`, a radius `0 < ρ ≤ 1/(2√2)`, `A > 0` and `ε₀ > 0` such that for every `ε ∈ (0, ε₀]` some
+grid `geomGrid 1 r` with horizon `t_N - t_1 ≤ A/ε`, `N ≥ 2` and switching index `1 ≤ K < N` give
+one learned score whose error is at most `ε` in sup norm, `ε`-Lipschitz and zero at the steps
+`k ≤ K`, switched on only where `t_k ≥ log(2 + 8R/ε)/2`, with
+`p_1({|x| ≤ ρ}) ≤ 1/10` and `q_1^det({|x| ≤ ρ}) ≥ 9/10` (the deterministic output collapses onto
+the midpoint), `TV(p_1, q_1^det) ≥ 4/5` and `TV(p_1, q_1^DDPM) ≤ 1/10`. -/
+theorem pf_midpoint_witness :
+    ∃ R : ℝ, 1 ≤ R ∧ ∃ ρ : ℝ, 0 < ρ ∧ ρ ≤ 1 / (2 * Real.sqrt 2) ∧ ∃ A : ℝ, 0 < A ∧
+      ∃ ε₀ : ℝ, 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ →
+      ∃ r : ℝ, 1 < r ∧ ∃ N : ℕ, 2 ≤ N ∧ ∃ K : ℕ, 1 ≤ K ∧ K < N ∧
+        geomGrid 1 r N - geomGrid 1 r 1 ≤ A / ε ∧
+        (∀ k ∈ Ioc K N, Real.log (2 + 8 * R / ε) / 2 ≤ geomGrid 1 r k) ∧
+        (∀ k y, ∑ i, (clampScoreAfter (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 0
+            (ε / R) R K k y i -
+          score (fwdDensity (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) k) y i) ^ 2 ≤
+            ε ^ 2) ∧
+        (∀ k, LipschitzWith ε.toNNReal (fun y =>
+          clampScoreAfter (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 0 (ε / R) R K k y -
+            score (fwdDensity (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) k) y)) ∧
+        (fwdLaw (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 1).real
+          {x | |x 0| ≤ ρ} ≤ 1 / 10 ∧
+        9 / 10 ≤ (algLaw zeroVar (pfMean (geomGrid 1 r)
+            (clampScoreAfter (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 0 (ε / R) R K))
+          (measurable_pfMean_clampScoreAfter _ _ 0 (ε / R) R K) N 1).real {x | |x 0| ≤ ρ} ∧
+        4 / 5 ≤ TotalVariation.tvSup
+          (fwdLaw (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 1)
+          (algLaw zeroVar (pfMean (geomGrid 1 r)
+            (clampScoreAfter (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 0 (ε / R) R K))
+          (measurable_pfMean_clampScoreAfter _ _ 0 (ε / R) R K) N 1) ∧
+        TotalVariation.tvSup (fwdLaw (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 1)
+          (algLaw (ddpmVar (geomGrid 1 r)) (scoreMean (geomGrid 1 r)
+            (clampScoreAfter (symTwoPoint fun _ : Fin 1 => (1 : ℝ)) (geomGrid 1 r) 0 (ε / R) R K))
+            (measurable_scoreMean _ (measurable_clampScoreAfter _ _ 0 (ε / R) R K)) N 1) ≤
+          1 / 10 := by
+  obtain ⟨R, hR, h⟩ := pf_ddpm_midpoint_separation one_pos (by norm_num : (0 : ℝ) < 1 / 10)
+  obtain ⟨ρ, hρ, hρa, A, hA, ε₀, hε₀, h'⟩ := h 1 one_pos
+  refine ⟨R, hR, ρ, hρ, by simpa [one_add_one_eq_two] using hρa, A, hA, ε₀, hε₀,
+    fun ε hε hεε => ?_⟩
+  obtain ⟨r, hr, N, hN, K, hK1, hKN, hT, hKT, h1, h2, h3, h4, h5, h6⟩ := h' ε hε hεε
+  refine ⟨r, hr, N, hN, K, hK1, hKN, hT, fun k hk => ?_, h1, h2, h3, by linarith, by linarith,
+    h6⟩
+  have := hKT k hk
+  rwa [one_pow, mul_one] at this
+
+end LongHorizon
 
 end FormalizeSampling.Audit.DiffusionAdvancedSeparation

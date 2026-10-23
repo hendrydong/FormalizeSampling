@@ -276,8 +276,8 @@ per-theorem status, with Lean declarations, is [`theorem_registry.md`](theorem_r
   has $`\mathrm{TV}(p_\delta, q) \ge 1 - \eta`$ while DDPM with the same score keeps the DF-1 bound.
   Uniform score accuracy without Lipschitz control does not suffice for deterministic samplers.
   The closest earlier result is Li–Di–Gu (2024, Thm 3.1): a smooth uniformly
-  $`\varepsilon`$-accurate score with TV $`\ge 1/(4\pi)`$ for the continuous-time probability-flow
-  ODE and Gaussian data. *Verified.*
+  $`\varepsilon`$-accurate score for which the continuous-time probability-flow ODE stays a fixed
+  TV distance away from Gaussian data. *Verified.*
 - **DF-8 Output versus path KL on Gaussian data.** For $`\mu = \mathcal{N}(0, vI)`$ with
   $`0 \lt v \le 1`$, the exact score, $`\sigma^2 = \beta/\alpha^2`$ and steps $`\le h`$, the output
   KL is at most $`d((1 - v) e^{-2(2t_N - t_1)} + e^{2h} - 1)^2/(4 s_1^2)`$ with
@@ -296,6 +296,17 @@ per-theorem status, with Lean declarations, is [`theorem_registry.md`](theorem_r
   uniform score accuracy controls transport distance, not TV (the pairing is implicit in the example
   of Li–Wei–Chen–Chi, 2023, who suggest a Wasserstein metric). *Verified; the comparison is with the
   exact-score deterministic output, not the data.*
+- **DF-10 Long horizon, small Lipschitz score error.** A score error that is at most $`\varepsilon`$
+  in sup norm and $`\varepsilon`$-Lipschitz, acting over a horizon of order $`1/\varepsilon`$, makes
+  the deterministic sampler collapse while DDPM with the same score stays within TV $`\eta`$ of
+  $`p_\delta`$: for standard Gaussian data (the exact-score probability-flow step is the identity)
+  $`\mathrm{TV}(p_\delta, q^{\mathrm{det}}) \ge 1 - \eta`$; for two atoms
+  $`(\delta_{-a} + \delta_a)/2`$ in dimension one, with the error switched on at high noise only,
+  the deterministic output puts mass $`\ge 1 - \eta`$ on a slab around the midpoint, where
+  $`p_\delta`$ puts mass $`\le \eta`$. Gaussian data, for which the forward process is stationary
+  and the exact probability-flow velocity vanishes, is the setting of Li–Di–Gu (2024, Thm 3.1).
+  *Verified; geometric grids, exponential-integrator step; a collapse onto the midpoint, not a third
+  mode; no lower bound on the necessary horizon.*
 - **PT-1 Particles.** Empirical push-forward under flows and Euler steps. *Verified.*
 - **DT-1 Deterministic step descent.**
   $`\mathrm{KL}((\mathrm{id} + \eta v)_\# \rho \Vert \pi) \le \mathrm{KL}(\rho \Vert \pi) - \eta \, (\text{dissipation}) + O(\eta^2)`$

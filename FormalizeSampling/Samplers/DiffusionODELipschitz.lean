@@ -345,6 +345,15 @@ Gaussian data `N(0, v I)` (`s_k = gaussVar v t k`). -/
 noncomputable def pfGain (v : ℝ) (t : ℕ → ℝ) (k : ℕ) : ℝ :=
   (fwdScale t k)⁻¹ - pfCoeff t k / gaussVar v t k
 
+/-- For `N(0, I)` data (`v = 1`) the forward variance is `s_k = 1` on every grid. -/
+theorem gaussVar_one (t : ℕ → ℝ) (k : ℕ) : gaussVar 1 t k = 1 := by
+  rw [gaussVar]; ring
+
+/-- For `N(0, I)` data the probability-flow gain is `g_k = α_k⁻¹ - (α_k⁻¹ - 1) = 1` on every
+grid. -/
+theorem pfGain_one (t : ℕ → ℝ) (k : ℕ) : pfGain 1 t k = 1 := by
+  rw [pfGain, gaussVar_one, div_one, pfCoeff]; ring
+
 /-- **The exact-score probability-flow step is linear for Gaussian data.** For `v > 0`,
 `t 0 = 0`, `t` strictly increasing and `k ≥ 1`:
 `pfMean t (∇ log p) k y = α_k⁻¹ y + (α_k⁻¹ - 1)(-y/s_k) = g_k y`. -/

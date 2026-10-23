@@ -19,9 +19,9 @@ and the deterministic output has `TV ≥ 1 - η` for any prescribed `η > 0`.
 
 Relation to the literature: the closest earlier result is Li–Di–Gu (2024, arXiv:2410.14237,
 Thm 3.1 and Remark 3.2), a smooth score within `ε` of the true score at every time and point for
-which the continuous-time probability-flow ODE from `N(0, 1)` data stays at `TV ≥ 1/(4π)`. The
-statement here reaches `TV ≥ 1 - η` for every data law with finite second moment, for a discrete
-step, at the price of a large Lipschitz constant (below).
+which the continuous-time probability-flow ODE from `N(0, 1)` data stays a fixed TV distance
+away from the data, however small `ε` is. The statement here is for a discrete step and every
+data law with finite second moment, with an error of large Lipschitz constant (below).
 
 ## The construction
 

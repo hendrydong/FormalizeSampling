@@ -12,7 +12,7 @@
 | DF-1 | `ddpm_bound.py` | `figures/ddpm_bound.png` |
 | DF-2 | `memorization.py` | `figures/memorization.png` |
 | DF-3 | `ode_vs_sde.py` | `figures/ode_vs_sde.png` |
-| DF-3 (numerical variant) | `ode_third_mode.py` | `figures/ode_third_mode.png` |
+| DF-3, DF-10 (numerical variant) | `ode_third_mode.py` | `figures/ode_third_mode.png` |
 | DF-4 | `ddpm_variance.py` | `figures/ddpm_variance.png` |
 | DF-5 | `path_kl.py` | `figures/path_kl.png` |
 | DF-6 | `ddpm_rate.py` | `figures/ddpm_rate.png` |
@@ -208,9 +208,9 @@ score obeys the DF-1 bound `tvSup_ddpm_latticeScore_le`, which is small for smal
 with fine enough steps. The Lean theorem uses the *discontinuous* (floor-function) lattice
 perturbation of Li, Wei, Chen and Chi (arXiv:2306.09251); credit for the example is theirs. The
 *smooth* sine variant in this figure (TV ≈ 0.94 < 1, closed-form flow, lower bound) is **numerical
-only** and is not formalised. For the continuous-time ODE, Li, Di and Gu (arXiv:2410.14237,
-Thm 3.1) prove a lower bound TV ≥ 1/(4π) for a different smooth, uniformly ε-accurate score error.
-A different construction, whose score error is an analytic function of the exact update, with
+only** and is not formalised. For the continuous-time ODE, Li, Di and Gu (arXiv:2410.14237, Thm 3.1)
+prove a TV lower bound, uniform in ε, for a different smooth, uniformly ε-accurate score error. A
+different construction, whose score error is an analytic function of the exact update, with
 $`\mathrm{TV} \ge 1 - \eta`$, is formalised as DF-7 (section 12). The DDPM side is the kind of
 guarantee in `DiffusionDiscretization.tvSup_output_le_ddpm_grid`, where the score enters only
 through its L² error.
@@ -440,8 +440,8 @@ the two-sided bound for this construction.
 
 **Prior work.** The closest earlier result is Li, Di and Gu (arXiv:2410.14237, Thm 3.1): a smooth
 score within ε of the true score everywhere for which the continuous-time probability-flow ODE stays
-at TV ≥ 1/(4π) from $`\mathcal{N}(0, 1)`$. DF-7 reaches TV ≥ 1 − η for every data law with finite
-second moment, at the price of a large Lipschitz constant.
+a fixed TV distance away from $`\mathcal{N}(0, 1)`$, however small ε is. DF-7 is a discrete-time
+statement for every data law with finite second moment, whose error has a large Lipschitz constant.
 
 ## 13. Fokker–Planck with a Lipschitz, unbounded drift (`fp_uniqueness.py` → `figures/fp_uniqueness.png`)
 
@@ -547,8 +547,10 @@ samples that start in $`\lvert x \rvert \lt h/2`$ onto the midpoint. Near the en
 from the midpoint, but these samples are too close to it to reach either mode in time. DDPM's
 injected noise moves samples off the midpoint, so the error is forgotten.
 
-**Prior work.** The mechanism is known. Nie et al. (arXiv:2311.01410, Thms 3.1–3.2) prove that noise
-contracts the KL divergence between two runs while a deterministic flow keeps it fixed. Ashiq et al.
+**Prior work.** The mechanism is known. Li, Di and Gu (arXiv:2410.14237, Thm 3.1) use that the
+probability-flow velocity vanishes for Gaussian data, so that the flow does not correct a uniformly
+small score error. Nie et al. (arXiv:2311.01410, Thms 3.1–3.2) prove that noise contracts the KL
+divergence between two runs while a deterministic flow keeps it fixed. Ashiq et al.
 (arXiv:2605.06831, Props. 4.7, 5.1 and C.5) show that, late in sampling, deterministic trajectories
 near the midpoint between two modes stay trapped there while DDPM escapes, and that a score error
 with the right directional structure can make the equilibrium near the midpoint instantaneously
@@ -556,20 +558,27 @@ stable. Zhang, Liao, Wu and Zou (arXiv:2508.16154) observe that deterministic sa
 over-concentrate, that this starts at high noise from an oscillating velocity error, and that the
 error is retained along the run. Beltran-Velez et al. (arXiv:2606.19162, Prop. 3.1) show that a
 velocity with small training error can send almost all of the probability-flow ODE's output into a
-chosen region. This figure is a concrete one-dimensional instance, with an error small both in sup
-norm (0.067) and in Lipschitz constant (0.7).
+chosen region. This figure is a concrete one-dimensional instance, with an error of sup norm 0.067
+and Lipschitz constant 0.7.
 
 **Checks.** The ODE output is the push-forward of $`\mathcal{N}(0, 1)`$ by a monotone map, so its
 gap mass and TV are computed by quadrature through that map, not by sampling; doubling the number
 of RK4 steps changes neither in the fourth digit. The DDPM numbers are Monte Carlo
 ($`n = 100{,}000`$).
 
-**Which theorem.** None directly: this construction is **numerical only**. The formal statements
-that a uniformly small score error can leave the deterministic sampler far from the target in TV,
-while DDPM keeps its guarantee, are DF-3 (section 4) and DF-7 (section 12). Their errors act at the
-last step, and DF-9 (section 15) bounds how far such an error moves mass from the exact-score
-output. Here the error acts throughout the run, and the exact flow between the modes
-amplifies it into a visible displacement of mass.
+**Which theorem.** This construction is **numerical only**. The formal statements that a uniformly
+small score error can leave the deterministic sampler far from the target in TV, while DDPM keeps
+its guarantee, are DF-3 (section 4) and DF-7 (section 12). Their errors act at the last step, and
+DF-9 (section 15) bounds how far such an error moves mass from the exact-score output. Here the
+error acts throughout the run, and the exact flow between the modes amplifies it into a visible
+displacement of mass. DF-10 (`DiffusionODEMidpoint.pf_ddpm_midpoint_separation`) proves a version
+with its own construction: two atoms $`(\delta_{-a} + \delta_a)/2`$, an error
+$`-(\varepsilon/R) \, \mathrm{clip}_R(x)`$ for some $`R \ge 1`$, with $`\mathrm{clip}_R`$ the clamp
+to $`[-R, R]`$ (at most $`\varepsilon`$, $`\varepsilon`$-Lipschitz), switched on at high noise,
+discrete steps on a geometric grid and a horizon of at most $`A/\varepsilon`$ ($`A`$ independent of
+$`\varepsilon`$). There the deterministic output collapses onto the midpoint (mass $`\ge 1 - \eta`$
+on a slab where $`p_1`$ puts mass $`\le \eta`$) instead of adding a third mode, while DDPM with the
+same score stays within TV $`\eta`$.
 
 **Caveats.** The TV here (0.23) is far from 1; the point of the figure is the shape of the output.
 The error is Lipschitz but not smooth at $`\lvert x \rvert = h/2`$.

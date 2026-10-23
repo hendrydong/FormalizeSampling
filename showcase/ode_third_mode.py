@@ -1,5 +1,5 @@
-"""DF-3, numerically: a tiny score error between two modes, and the deterministic sampler
-outputs a third mode (illustration only; this construction is not formalised).
+"""DF-3 and DF-10, numerically: a tiny score error between two modes, and the deterministic
+sampler outputs a third mode (illustration only; this construction is not formalised).
 
 Data (1/2) N(-2, 1/4) + (1/2) N(2, 1/4) and the OU forward process, so
     p_t = (1/2) N(-m_t, v_t) + (1/2) N(m_t, v_t),   m_t = 2 e^{-t},   v_t = 1 - (3/4) e^{-2t},
@@ -20,7 +20,10 @@ score-error term. Since the sampler starts from N(0, 1), not exactly p_T, an out
 guarantee also needs an initialisation term; finite-step DDPM needs discretisation control.
 The formal results, with a uniformly small score error and deterministic-sampler TV close to 1,
 are DF-3 (`DiffusionODESeparation.ddpm_ddim_separation`, after Li, Wei, Chen, Chi) and DF-7
-(`DiffusionODESmooth.ddpm_ddim_smooth_separation`); both perturb the last step only.
+(`DiffusionODESmooth.ddpm_ddim_smooth_separation`); both perturb the last step only. DF-10
+(`DiffusionODEMidpoint.pf_ddpm_midpoint_separation`) uses an error that is small in sup norm and
+Lipschitz constant, acting at high noise over a horizon of order 1/eps, for two atoms; there the
+deterministic output collapses onto the midpoint instead of adding a third mode.
 """
 
 from math import erf, sqrt

@@ -207,16 +207,9 @@ theorem entropyStep_dirac {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
   linarith
 
 
-/-! ### Sums over a grid -/
+/-! ### Sums over a grid
 
-/-- Telescoping over `Ioc`: `∑_{k=m+1}^N (f k - f (k-1)) = f N - f m` for `m ≤ N`. -/
-theorem sum_Ioc_sub_pred (f : ℕ → ℝ) {m N : ℕ} (hmN : m ≤ N) :
-    ∑ k ∈ Ioc m N, (f k - f (k - 1)) = f N - f m := by
-  induction N, hmN using Nat.le_induction with
-  | base => simp
-  | succ n hmn ih =>
-    rw [Finset.sum_Ioc_succ_top hmn, ih, Nat.add_sub_cancel]
-    ring
+The telescoping identity `sum_Ioc_sub_pred` is in `Samplers/DiffusionMain.lean`. -/
 
 section Sums
 

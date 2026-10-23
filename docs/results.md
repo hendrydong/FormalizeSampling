@@ -41,7 +41,7 @@ unless "1D" is stated. KL is Mathlib's `klDiv`. TV is $`\sup_A \lvert \mu(A) - \
   of Altschuler–Chewi (2023, Thm 3.2) and is stated for $`C^2`$ potentials by Pedrotti (2026,
   Cor. 3.5); here $`f`$ need only be finite and convex.
 
-**Diffusion models (DF-1 … DF-9)**
+**Diffusion models (DF-1 … DF-10)**
 
 Here $`p_\delta`$ is the data law noised up to the early-stopping time $`\delta = t_1`$, and
 $`u_k = e^{2t_k} - 1`$.
@@ -70,10 +70,9 @@ $`u_k = e^{2t_k} - 1`$.
   proves a lower bound $`(2^m - 1)/\lvert b_2 \rvert`$ on its Lipschitz constant for the
   (non-explicit) $`m`$ used, and its growth as $`\eta \to 0`$ is numerical only. The closest earlier
   result is Li–Di–Gu (2024, Thm 3.1): a smooth score within $`\varepsilon`$ of the true score
-  everywhere for which the continuous-time probability-flow ODE stays at TV $`\ge 1/(4\pi)`$ from
-  Gaussian data; we have not found TV $`\ge 1 - \eta`$ with an analytic error for every data law
-  with finite second moment stated before. Conversely (DF-9), if the exact-score steps are
-  Lipschitz, a uniformly $`\varepsilon`$-accurate score keeps the deterministic output within an
+  everywhere for which the continuous-time probability-flow ODE stays a fixed TV distance away
+  from Gaussian data, however small $`\varepsilon`$ is. Conversely (DF-9), if the exact-score steps
+  are Lipschitz, a uniformly $`\varepsilon`$-accurate score keeps the deterministic output within an
   explicit distance of the exact-score deterministic output under a coupling ($`W_\infty`$, $`W_2`$
   bounds); comparison with the data itself is not proved. Li–Wei–Chen–Chi suggest a Wasserstein
   metric as a way around their example; DF-9 states the pairing of TV-far and transport-close as a
@@ -85,6 +84,22 @@ $`u_k = e^{2t_k} - 1`$.
   standard Gaussian-regularisation bound (joint convexity of KL, as for the proximal sampler in
   PX-2); adding a little noise to pass from a Wasserstein bound for a deterministic sampler to KL or
   TV is the device of Chen–Chewi–Lee–Li–Lu–Salim (2023, §4) and Lyu–Chen–Feng (2023, Lemma 12).
+- **Long horizon, small Lipschitz error (DF-10)**: a small Lipschitz constant does not rescue the
+  deterministic sampler once the horizon is long. The error
+  $`-(\varepsilon/R) \, \mathrm{clip}_R(y)`$ (in one coordinate) is at most $`\varepsilon`$ in sup
+  norm and $`\varepsilon`$-Lipschitz; while the forward marginal is close to stationary the
+  exact-score probability-flow step is close to the identity, so the error accumulates. For standard
+  Gaussian data the deterministic sampler has $`\mathrm{TV}(p_\delta, q) \ge 1 - \eta`$ while DDPM
+  with the same score has $`\mathrm{TV} \le \eta`$, on geometric grids with a horizon of at most
+  $`A/\varepsilon`$ ($`A`$ depends on $`\eta`$, the dimension and the grid parameter $`u_1`$, not on
+  $`\varepsilon`$). For two atoms $`(\delta_{-a} + \delta_a)/2`$ in dimension one, with the error
+  switched on at high noise only, the deterministic output puts mass $`\ge 1 - \eta`$ on a slab
+  around the midpoint where $`p_\delta`$ puts mass $`\le \eta`$ (it collapses onto the midpoint),
+  while DDPM stays within TV $`\eta`$. Gaussian data, a stationary forward process whose exact
+  probability-flow velocity vanishes, is the setting of Li–Di–Gu (2024, Thm 3.1); that the
+  deterministic flow carries a mismatch forward while the stochastic sampler forgets it is described
+  by Nie et al. (2024, Thms 3.1–3.2) and Cao et al. (2023, arXiv:2306.02063). No lower bound on the
+  horizon a collapse needs is proved.
 - **Reverse variance (DF-4)**: with reverse variance $`\sigma_k^2 = \beta_k`$, on a grid that is
   geometric up to some index ($`u_{k+1} - u_k \le \kappa u_k`$, $`1 \le \kappa u_m \le 1 + \kappa`$)
   and arbitrary afterwards, the discretisation error is bounded by a constant depending on

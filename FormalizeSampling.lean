@@ -143,13 +143,16 @@ public import FormalizeSampling.Samplers.DiffusionKL
 public import FormalizeSampling.Samplers.DiffusionMain
 public import FormalizeSampling.Samplers.DiffusionMemorization
 public import FormalizeSampling.Samplers.DiffusionODELipschitz
+public import FormalizeSampling.Samplers.DiffusionODELongHorizon
 public import FormalizeSampling.Samplers.DiffusionODESeparation
 public import FormalizeSampling.Samplers.DiffusionODESmooth
 public import FormalizeSampling.Samplers.DiffusionODESmoothMap
+public import FormalizeSampling.Samplers.DiffusionODEMidpoint
 public import FormalizeSampling.Samplers.DiffusionPath
 public import FormalizeSampling.Samplers.DiffusionPosterior
 public import FormalizeSampling.Samplers.DiffusionRate
 public import FormalizeSampling.Samplers.DiffusionSetup
+public import FormalizeSampling.Samplers.DiffusionTwoPoint
 public import FormalizeSampling.Samplers.DiffusionVarianceHeat
 public import FormalizeSampling.Samplers.DiffusionVarianceMain
 public import FormalizeSampling.Samplers.DiffusionVarianceStep

@@ -323,6 +323,17 @@ theorem tvSup_output_le_ddpm_grid (μ : Measure (Fin d → ℝ)) [IsProbabilityM
   tvSup_le_sqrt_of_klDiv_le
     (klDiv_output_le_ddpm_grid_explicit μ hμ h0 ht hκ hN hgrid s hs hsint)
 
+/-! ### Sums over a grid -/
+
+/-- Telescoping over `Ioc`: `∑_{k=m+1}^N (f k - f (k-1)) = f N - f m` for `m ≤ N`. -/
+theorem sum_Ioc_sub_pred (f : ℕ → ℝ) {m N : ℕ} (hmN : m ≤ N) :
+    ∑ k ∈ Ioc m N, (f k - f (k - 1)) = f N - f m := by
+  induction N, hmN using Nat.le_induction with
+  | base => simp
+  | succ n hmn ih =>
+    rw [Finset.sum_Ioc_succ_top hmn, ih, Nat.add_sub_cancel]
+    ring
+
 /-! ### The geometric grid -/
 
 /-- The geometric grid: `t_0 = 0` and, for `k ≥ 1`, `t_k = log(1 + u_1 r^{k-1}) / 2`, i.e.
