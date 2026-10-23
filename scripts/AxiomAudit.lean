@@ -20,8 +20,11 @@ The public Markdown files (`docFiles`) are checked against the environment too:
 * every registry row that cites declarations must cite one that the statement audit uses: one in
   the transitive closure, through the library's own declarations, of the constants used in the
   types and proofs of the declarations of the `FormalizeSampling.Audit` modules;
-* every row listed on the `Rows:` line of an audit module's docstring must cite a declaration in
-  the closure of that module's own declarations.
+* every audit module has a `Rows:` line, at column 0 and on one line, in its first module
+  docstring (read as `scripts/check_contracts.py` reads it), and every row listed there must
+  cite a declaration in the closure of that module's own declarations.
+
+The pure helpers that parse the documents are checked on fixed inputs (`#guard`).
 -/
 
 open Lean Elab Command
@@ -83,9 +86,12 @@ def isRowId (id : String) : Bool :=
   | [p, n] => p.length == 2 && p.all Char.isUpper && !n.isEmpty && n.all Char.isDigit
   | _ => false
 
-/-- The IDs on the `Rows: KL-1, KL-2.` line of an audit module's source (empty if none). -/
+/-- The IDs on the `Rows: KL-1, KL-2.` line of an audit module's source: the first line of its
+first module docstring (`/-! … -/`) that starts, at column 0, with `Rows: `, as
+`audit_header` in `scripts/check_contracts.py` reads it (empty if there is none). -/
 def rowsLine (source : String) : Array String := Id.run do
-  for line in source.splitOn "\n" do
+  let doc := ((source.splitOn "/-!").getD 1 "").splitOn "-/" |>.getD 0 ""
+  for line in doc.splitOn "\n" do
     if line.startsWith "Rows: " then
       let ids := ((line.replace "Rows: " "").replace "." "").replace " " ""
       return (ids.splitOn ",").toArray
@@ -97,6 +103,24 @@ def usedConstants (ci : ConstantInfo) : Array Name :=
     ((ci.value? (allowOpaque := true)).map (·.getUsedConstants)).getD #[]
 
 end AxiomAudit
+
+-- The pure helpers on fixed inputs.
+#guard AxiomAudit.dottedName? "Pinsker.tvSup_le_sqrt_klDiv" == some `Pinsker.tvSup_le_sqrt_klDiv
+#guard AxiomAudit.dottedName? "FormalizeSampling.Core" == some `FormalizeSampling.Core
+#guard AxiomAudit.dottedName? "Core.lean" == none
+#guard AxiomAudit.dottedName? "fractions.Fraction" == none
+#guard AxiomAudit.dottedName? "klDiv" == none
+#guard AxiomAudit.dottedName? "x.1" == none
+#guard AxiomAudit.dottedName? "x ≤ y.z" == none
+#guard AxiomAudit.lineSpans "a `A.b`, $`x.y`$ and `C.d`" == #["A.b", "C.d"]
+#guard AxiomAudit.lineSpans "no spans" == #[]
+#guard AxiomAudit.isRowId "KL-1" && AxiomAudit.isRowId "CE-01"
+#guard !AxiomAudit.isRowId "KL1" && !AxiomAudit.isRowId "kl-1" && !AxiomAudit.isRowId "KL-" &&
+  !AxiomAudit.isRowId "KLM-1" && !AxiomAudit.isRowId "KL-1a"
+#guard AxiomAudit.rowsLine "/-!\n# Title\n\nRows: FL-5, DF-10.\n-/\n" == #["FL-5", "DF-10"]
+#guard AxiomAudit.rowsLine "/-!\n# Title\n\n  Rows: FL-5, DF-10.\n-/\n" == #[]
+#guard AxiomAudit.rowsLine "/-!\n# Title\n-/\n\n/-!\nRows: FL-5.\n-/\n" == #[]
+#guard AxiomAudit.rowsLine "/-!\n# Title\n\nRows: FL-5,\nDF-10.\n-/\n" == #["FL-5", ""]
 
 open AxiomAudit in
 run_cmd do
@@ -204,15 +228,22 @@ run_cmd do
     throwError "Registry rows whose cited declarations the statement audit never uses: \
       {unwitnessed.qsort (· < ·)}"
   let mut unused : Array String := #[]
+  let mut malformed : Array String := #[]
   let mut listed : Nat := 0
   for (m, decls) in auditDecls.toList do
     let source ← liftIO <| IO.FS.readFile s!"{m.toString.replace "." "/"}.lean"
     let seen := closure decls
-    for id in rowsLine source do
+    let ids := rowsLine source
+    if ids.isEmpty || !ids.all isRowId then
+      malformed := malformed.push s!"{m}: {ids}"
+    for id in ids do
       let names := cited.getD id #[]
       listed := listed + 1
       unless names.isEmpty || names.any seen.contains do
         unused := unused.push s!"{m}: {id}"
+  unless malformed.isEmpty do
+    throwError "Audit modules without an unindented, one-line `Rows: <IDs>.` line in their \
+      module docstring:\n{"\n".intercalate malformed.toList}"
   unless unused.isEmpty do
     throwError "Rows: lines of audit modules list rows none of whose cited declarations the \
       module uses:\n{"\n".intercalate unused.toList}"

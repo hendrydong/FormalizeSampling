@@ -6,9 +6,12 @@
   contains no `sorry`, `admit`, `axiom`, `native_decide`, `implemented_by`, `extern` or other
   trust-boundary overrides; `scripts/check_contracts.py` enforces this.
 - Every public theorem has a docstring stating its mathematics and assumptions. Core results
-  have a row in `docs/theorem_registry.md`, with IDs from `docs/blueprint.md`, section 4, in the
-  section of their area, and a witness in a module of `FormalizeSampling/Audit/` whose docstring
-  starts with the title `# Statement audit: <summary>` and lists the row on its `Rows:` line.
+  have a row in `docs/theorem_registry.md`, which assigns the IDs (numbered 1, 2, ... within each
+  prefix), in the section of their area; the Statement cell starts with a bold short title. Each
+  row has one bullet in `docs/results.md`, in the same section and order, led by the title and
+  the ID and marked `*Conditional*` if the row is, and a witness in a module of
+  `FormalizeSampling/Audit/` whose docstring starts with the title `# Statement audit: <summary>`
+  and lists the row on its `Rows:` line (unindented, on one line).
 - `docs/declaration_index.md` and the coverage and Layout blocks of the README are generated:
   after changing a documented theorem, a registry row, the docstring of an Audit module or the
   directory descriptions (`GROUPS` and `LAYERS` in `scripts/check_contracts.py`), run
@@ -30,6 +33,9 @@
   the version pinned in `requirements-dev.txt`.
 
 ## Conventions
+
+The [glossary](docs/glossary.md) fixes the vocabulary (scores, the notions of "the same
+dynamics", distances and divergences). In Lean:
 
 - The state space is `Fin d → ℝ` with Lebesgue `volume`; inner products use `dotProduct`
   (`⬝ᵥ`) and `Matrix.mulVec` (`*ᵥ`). Shared calculus (`partialDeriv`, `grad`, `divergence`,

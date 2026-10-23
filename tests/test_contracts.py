@@ -79,14 +79,15 @@ def generated_blocks(*names: str) -> list[str]:
 
 def registry(rows: dict[str, tuple[str, ...]], ids: tuple[str, ...] = FIXTURE_IDS) -> str:
     """A registry with one row per ID: `rows[rid]` is (status, declarations[, modules]); rows not
-    given are Open and cite nothing. Every row lists the module `Foundations/Example`."""
+    given are Open and cite nothing. Every row has the title `**Result.**` and lists the module
+    `Foundations/Example`."""
     lines, area = ["# Registry"], ""
     for rid in ids:
         status, decl, module = (*rows.get(rid, ("Open", "—")), "`Foundations/Example`")[:3]
         if SECTIONS[rid.split("-")[0]] != area:
             area = SECTIONS[rid.split("-")[0]]
             lines += ["", f"## {area}", ""]
-        lines.append(f"| {rid} | {status} | statement | {decl} | scope | {module} |")
+        lines.append(f"| {rid} | {status} | **Result.** statement | {decl} | scope | {module} |")
     return "\n".join(lines) + "\n"
 
 
@@ -96,7 +97,8 @@ def fixture_docs(
     """Minimal README, docs/results.md and docs/literature.md that agree with `registry(rows)`:
     the counts sentence (the fixtures have under 1000 lines and 100 theorems), a moves table
     with every ID once (ranges per prefix), a literature map with one work citing the first ID,
-    the Statuses section, one results bullet per ID under its registry section, and links."""
+    the Statuses section, one results bullet per ID under its registry section (marked
+    `*Conditional*` for Conditional rows), and links."""
     statuses = [rows.get(rid, ("Open",))[0] for rid in ids]
     by_prefix: dict[str, list[str]] = {}
     for rid in ids:
@@ -135,7 +137,12 @@ def fixture_docs(
         if SECTIONS[rid.split("-")[0]] != area:
             area = SECTIONS[rid.split("-")[0]]
             results += ["", f"## {area}", ""]
-        results.append(f"- **Result ({rid}).** Statement.")
+        mark = (
+            " *Conditional* on a hypothesis."
+            if rows.get(rid, ("Open",))[0] == "Conditional"
+            else ""
+        )
+        results.append(f"- **Result ({rid}).** Statement.{mark}")
     literature = [
         "# Literature",
         "",
@@ -527,6 +534,19 @@ class ContractTests(unittest.TestCase):
             "Unknown registry ID CE-02 in FormalizeSampling/Foundations/Example.lean", output
         )
 
+    def test_unknown_ids_in_the_python_illustrations_are_rejected(self):
+        clean = {"showcase/plot.py": '"""KL-1: theory vs reality; legacy FS-006."""\n'}
+        code, output = self.run_checker(MODULE, {}, write_index=True, docs=clean)
+        self.assertEqual(code, 0, output)
+        stale = {
+            "showcase/plot.py": '"""KL-9: theory vs reality."""\n',
+            "experiments/check.py": "# See CE-02.\n",
+        }
+        code, output = self.run_checker(MODULE, {}, write_index=True, docs=stale)
+        self.assertEqual(code, 1)
+        self.assertIn("Unknown registry ID KL-9 in showcase/plot.py", output)
+        self.assertIn("Unknown registry ID CE-02 in experiments/check.py", output)
+
     def test_ids_and_ranges(self):
         pattern = check_contracts.id_pattern(["KL-1", "CE-01"])
         self.assertEqual(
@@ -544,7 +564,7 @@ class ContractTests(unittest.TestCase):
         self.assertIn("README.md moves table lists KL-2 2 times, not once", output)
         self.assertIn("README.md moves table lists CE-01 0 times, not once", output)
 
-    def test_results_bullets_follow_the_registry_when_enabled(self):
+    def test_results_bullets_follow_the_registry(self):
         results = fixture_docs({})["docs/results.md"]
         wrong = (
             results.replace("- **Result (KL-3).** Statement.\n", "")
@@ -554,12 +574,11 @@ class ContractTests(unittest.TestCase):
                 "- **Result (CE-01).** One.\n- **Result (KL-2).** Misplaced.",
             )
         )
-        with patch.object(check_contracts, "RESULTS_ONE_BULLET_PER_ID", True):
-            code, output = self.run_checker(MODULE, {}, write_index=True)
-            self.assertEqual(code, 0, output)
-            code, output = self.run_checker(
-                MODULE, {}, write_index=True, docs={"docs/results.md": wrong}
-            )
+        code, output = self.run_checker(MODULE, {}, write_index=True)
+        self.assertEqual(code, 0, output)
+        code, output = self.run_checker(
+            MODULE, {}, write_index=True, docs={"docs/results.md": wrong}
+        )
         self.assertEqual(code, 1)
         self.assertIn("docs/results.md bullet led by several IDs: CE-01, KL-1", output)
         self.assertIn("docs/results.md has 2 bullets led by KL-1, not one", output)
@@ -567,10 +586,66 @@ class ContractTests(unittest.TestCase):
         self.assertIn(
             "docs/results.md bullet KL-2 is under 'Counterexamples', not 'Foundations'", output
         )
+
+    def test_results_bullets_carry_the_registry_titles_order_and_marks(self):
+        rows = {
+            "KL-1": ("Verified", "`FormalizeSampling.first`"),
+            "KL-2": ("Conditional", "`FormalizeSampling.first`"),
+            "CE-01": ("Counterexample", "`FormalizeSampling.second`"),
+        }
+        results = fixture_docs(rows)["docs/results.md"]
+        self.assertIn("- **Result (KL-2).** Statement. *Conditional* on a hypothesis.", results)
+        code, output = self.run_checker(MODULE, rows, write_index=True)
+        self.assertEqual(code, 0, output)
+        cases = {
+            "docs/results.md bullet KL-1 is led by 'Other (KL-1).', not by the registry title "
+            "'Result (KL-1).'": results.replace("**Result (KL-1).**", "**Other (KL-1).**"),
+            "docs/results.md bullet KL-2 is out of registry order (KL-1 first)": results.replace(
+                "- **Result (KL-1).** Statement.\n- **Result (KL-2).** Statement. *Conditional* "
+                "on a hypothesis.",
+                "- **Result (KL-2).** Statement. *Conditional* on a hypothesis.\n"
+                "- **Result (KL-1).** Statement.",
+            ),
+            "docs/results.md bullet KL-2 lacks the mark *Conditional*; the registry says "
+            "Conditional": results.replace("*Conditional* on", "*Verified* for"),
+            "docs/results.md bullet KL-2 is marked *Verified*; the registry says Conditional": (
+                results.replace("*Conditional* on", "*Verified* for")
+            ),
+            "docs/results.md bullet KL-1 has the mark *Conditional*; the registry says Verified": (
+                results.replace(
+                    "- **Result (KL-1).** Statement.", "- **Result (KL-1).** S.\n  *Conditional*."
+                )
+            ),
+        }
+        for message, text in cases.items():
+            code, output = self.run_checker(
+                MODULE, rows, write_index=True, docs={"docs/results.md": text}
+            )
+            self.assertEqual(code, 1, message)
+            self.assertIn(message, output)
+        flipped = {**rows, "CE-01": ("Verified", "`FormalizeSampling.second`")}
         code, output = self.run_checker(
-            MODULE, {}, write_index=True, docs={"docs/results.md": wrong}
+            MODULE, flipped, write_index=True, docs={"docs/results.md": results}
         )
-        self.assertEqual(code, 0, output)  # not enforced by default
+        self.assertEqual(code, 1)
+        self.assertIn(
+            "docs/results.md bullet CE-01 is under 'Counterexamples'; the registry says Verified",
+            output,
+        )
+        moved = {**rows, "KL-3": ("Counterexample", "`FormalizeSampling.second`")}
+        code, output = self.run_checker(MODULE, moved, write_index=True)
+        self.assertEqual(code, 1)
+        self.assertIn(
+            "docs/results.md Counterexample bullet KL-3 is not under 'Counterexamples'", output
+        )
+        with synthetic_repo(MODULE, rows) as root:
+            path = root / "docs/theorem_registry.md"
+            path.write_text(
+                path.read_text().replace("| **Result.** statement |", "| statement |", 1)
+            )
+            code, output = invoke(root, "--write")
+        self.assertEqual(code, 1)
+        self.assertIn("Verified row whose Statement does not start with **<title>.**: KL-1", output)
 
     def test_status_words_next_to_ids_match_the_registry(self):
         rows = {"KL-1": ("Verified", "`FormalizeSampling.first`")}
@@ -631,6 +706,52 @@ class ContractTests(unittest.TestCase):
             output,
         )
         self.assertIn("KL-2: FormalizeSampling.helper is not a documented public theorem", output)
+
+    def test_missing_readme_tables_and_sections_are_reported(self):
+        readme = self.readme()
+        cases = {
+            "No moves table (| Move | ... | Registry IDs |) in README.md": readme.replace(
+                "| Move | What it provides |", "| Step | What it provides |"
+            ),
+            "No literature map table (## Literature map, | Work | ...) in README.md": (
+                readme.replace("| Work | Algorithm |", "| Paper | Algorithm |")
+            ),
+            "No ## Statuses section in README.md": readme.replace("## Statuses", "## Status"),
+        }
+        for message, text in cases.items():
+            code, output = self.run_checker(MODULE, {}, write_index=True, docs={"README.md": text})
+            self.assertEqual(code, 1, message)
+            self.assertIn(message, output)
+
+    def test_literature_sections_need_distinct_urls(self):
+        readme = self.readme()
+        literature = fixture_docs({})["docs/literature.md"]
+        cases = {
+            "docs/literature.md section 'Plain (2021)' has no URL": (
+                readme,
+                literature + "\n### Plain (2021)\n\nNo link here.\n",
+            ),
+            "docs/literature.md sections share the URL https://example.org/a": (
+                readme,
+                literature + "\n### Again (2021)\n\n[a](https://example.org/a).\n",
+            ),
+            "README.md literature map lists https://example.org/a twice": (
+                readme.replace(
+                    "[Author (2020)](https://example.org/a)",
+                    "[Author (2020)](https://example.org/a); [Same](https://example.org/a)",
+                ),
+                literature,
+            ),
+        }
+        for message, (text, sections) in cases.items():
+            code, output = self.run_checker(
+                MODULE,
+                {},
+                write_index=True,
+                docs={"README.md": text, "docs/literature.md": sections},
+            )
+            self.assertEqual(code, 1, message)
+            self.assertIn(message, output)
 
     def test_statuses_section_lists_every_status(self):
         readme = self.readme()
@@ -876,9 +997,29 @@ class ContractTests(unittest.TestCase):
         self.assertIn("Registry row CE-01 is in no witness module's Rows line", output)
         self.assertIn(
             "Witness module docstring without the title `# Statement audit: <summary>` and one "
-            "`Rows: <IDs>.` line: FormalizeSampling/Audit/Untitled.lean",
+            "unindented, one-line `Rows: <IDs>.` line: FormalizeSampling/Audit/Untitled.lean",
             output,
         )
+
+    def test_rows_line_is_unindented_and_on_one_line(self):
+        witness = audit_module(FIXTURE_IDS)
+        self.assertIn("\nRows: KL-1, KL-2, KL-3, CE-01.\n", witness)
+        cases = {
+            "indented": witness.replace("\nRows: ", "\n  Rows: "),
+            "wrapped": witness.replace("KL-2, KL-3", "KL-2,\nKL-3"),
+            "unterminated": witness.replace("CE-01.", "CE-01"),
+            "repeated": witness.replace("\nWitnesses.", "\nRows: KL-1.\nWitnesses."),
+        }
+        for name, text in cases.items():
+            code, output = self.run_checker(MODULE, {}, write_index=True, extra={WITNESS: text})
+            self.assertEqual(code, 1, name)
+            self.assertIn(
+                "one unindented, one-line `Rows: <IDs>.` line: FormalizeSampling/Audit/Witness.lean",
+                output,
+            )
+        later = witness + "\n/-! Rows: KL-1. -/\n"
+        code, output = self.run_checker(MODULE, {}, write_index=True, extra={WITNESS: later})
+        self.assertEqual(code, 0, output)
 
     def test_stale_witness_table_is_rejected(self):
         with synthetic_repo(MODULE, {}) as root:

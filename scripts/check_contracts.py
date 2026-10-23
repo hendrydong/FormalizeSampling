@@ -21,10 +21,12 @@ Generated documentation; a stale copy is an error, and --write (alias --write-in
 The README blocks lie between `<!-- BEGIN GENERATED: name -->` and `<!-- END GENERATED: name -->`.
 
 The documentation checks read an explicit list of public files (DOC_FILES): registry IDs are
-contiguous per prefix and every ID mentioned exists; status words next to IDs agree with the
-registry; the README counts sentence, moves table, literature map and Statuses section agree
-with the registry, the sources and docs/literature.md; registry rows cite documented theorems
-and list their modules; relative links and their anchors resolve.
+contiguous per prefix and every ID mentioned exists (in the documents, the library and the Python
+illustrations); status words next to IDs agree with the registry; the README counts sentence,
+moves table, literature map and Statuses section agree with the registry, the sources and
+docs/literature.md; docs/results.md has one bullet per registry row, in registry order, with the
+row's title and status mark; registry rows start with a bold title, cite documented theorems and
+list their modules; relative links and their anchors resolve.
 """
 
 from __future__ import annotations
@@ -57,12 +59,19 @@ DOC_FILES = (
     "experiments/README.md",
 )
 REQUIRED_DOCS = (README, RESULTS, LITERATURE)
+# The directories of the Python illustrations, whose IDs are checked like those of the documents.
+ILLUSTRATIONS = ("showcase", "experiments")
 # Registry IDs: a two-letter prefix and a number, numbered 1, 2, ... within each prefix.
 ROW_ID = re.compile(r"^\| (?P<id>(?:[A-Z]{2}-\d+|CE-\d{2})) \|")
-# docs/results.md has one bullet per registry ID, led by the ID (`- **Pinsker (KL-1).** ...`),
-# under the `## ` heading of the ID's registry section. Not enforced yet.
-RESULTS_ONE_BULLET_PER_ID = False
+# docs/results.md has one bullet per registry ID, in registry order, under the `## ` heading of
+# the ID's registry section, led by the row's bold title and the ID (`- **Pinsker (KL-1).** ...`
+# for the Statement cell `**Pinsker.** ...`).
+RESULTS_ONE_BULLET_PER_ID = True
 BULLET_LEAD = re.compile(r"^- \*\*(?P<lead>.+?)\*\*")
+# The bold short title that starts the Statement cell of every certified registry row.
+REGISTRY_TITLE = re.compile(r"\*\*(?P<title>[^*]+?)\.\*\*")
+# The section, in the registry and in docs/results.md, of the Counterexample rows.
+COUNTEREXAMPLES = "Counterexamples"
 # The README counts sentence; every space may be a line break.
 COUNTS = re.compile(
     r"About\s+(?P<lines>[\d,]+)\s+lines\s+of\s+Lean,\s+(?P<theorems>[\d,]+)\s+documented\s+"
@@ -73,6 +82,8 @@ URL = re.compile(r"https?://[^\s)\]>]+")
 LINK = re.compile(r"\]\((?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\)")  # inline links and images
 STATUSES = ("Verified", "Conditional", "Counterexample", "Planned", "Open")  # in display order
 CERTIFIED = {"Verified", "Conditional", "Counterexample"}
+# A status word in italics (`*Conditional*`), the way docs/results.md marks a bullet.
+STATUS_MARK = re.compile(rf"\*({'|'.join(STATUSES)})\*")
 COLUMNS = 6  # ID | Status | Statement | Lean declarations | Assumptions and scope | Module
 FORBIDDEN = re.compile(r"\b(sorry|admit|axiom|native_decide)\b")
 OVERRIDES = re.compile(r"skipKernelTC|implemented_by|\bextern\b|debug\.skipKernelTC")
@@ -138,7 +149,9 @@ NUMBERS = ("no", "one", "two", "three", "four", "five", "six", "seven", "eight",
 # and has a line `Rows: KL-1, KL-2.` listing the registry rows the module witnesses.
 AUDIT = "Audit"
 AUDIT_TITLE = re.compile(r"# Statement audit: (?P<summary>\S.*)")
-AUDIT_ROWS = re.compile(r"Rows: (?P<ids>.*?)\.?")
+# The `Rows:` line starts at column 0 and ends with a period, with the IDs separated by `, `, as
+# scripts/AxiomAudit.lean reads it (`rowsLine`).
+AUDIT_ROWS = re.compile(r"Rows: (?P<ids>[^,.\s]+(?:, [^,.\s]+)*)\.")
 # Marker lines around the generated blocks of the README.
 MARKER = "<!-- {} GENERATED: {} -->"
 WIDTH = 100  # line width of generated paragraphs
@@ -509,15 +522,18 @@ def replace_block(text: str, name: str, body: str) -> str | None:
 
 
 def audit_header(source: str) -> tuple[str, list[str]] | None:
-    """The fixed header of a witness module's docstring: the summary of its title
-    `# Statement audit: <summary>` (the first line) and the IDs of its one `Rows:` line."""
+    """The fixed header of a witness module's docstring (the first `/-! ... -/` block): the
+    summary of its title `# Statement audit: <summary>` (the first line) and the IDs of its one
+    `Rows:` line, which must start at column 0 and fit on one line, as scripts/AxiomAudit.lean
+    reads it."""
     doc = re.search(r"/-!(.*?)-/", source, re.S)
-    lines = [line.strip() for line in doc[1].strip().splitlines()] if doc else []
-    title = AUDIT_TITLE.fullmatch(lines[0]) if lines else None
-    rows = [match for match in map(AUDIT_ROWS.fullmatch, lines) if match]
-    if not title or len(rows) != 1:
+    lines = doc[1].strip().splitlines() if doc else []
+    title = AUDIT_TITLE.fullmatch(lines[0].strip()) if lines else None
+    rows = [line.rstrip() for line in lines if line.lstrip().startswith("Rows:")]
+    match = AUDIT_ROWS.fullmatch(rows[0]) if len(rows) == 1 else None
+    if not title or not match:
         return None
-    return title["summary"], [rid.strip() for rid in rows[0]["ids"].split(",")]
+    return title["summary"], match["ids"].split(", ")
 
 
 def audit_errors(headers: dict[str, tuple[str, list[str]] | None], ids: list[str]) -> list[str]:
@@ -528,7 +544,7 @@ def audit_errors(headers: dict[str, tuple[str, list[str]] | None], ids: list[str
         if header is None:
             errors.append(
                 "Witness module docstring without the title `# Statement audit: <summary>` and "
-                f"one `Rows: <IDs>.` line: {relative}"
+                f"one unindented, one-line `Rows: <IDs>.` line: {relative}"
             )
             continue
         for rid in sorted(set(header[1])):
@@ -664,25 +680,82 @@ def moves_table_errors(readme: str, ids: list[str], pattern: str) -> list[str]:
     ]
 
 
-def results_bullet_errors(results: str, sections: dict[str, str], pattern: str) -> list[str]:
-    """docs/results.md has one bullet per registry ID, led by that ID alone
-    (`- **Pinsker (KL-1).** ...`), under the `## ` heading of the ID's registry section."""
-    errors, placed, heading = [], {}, ""
+def results_bullets(results: str) -> list[tuple[str, str, str]]:
+    """The bullets of docs/results.md with a bold lead (`- **Pinsker (KL-1).** ...`), in order:
+    the `## ` heading above the bullet, the lead, and the bullet's text up to the next unindented
+    or blank line."""
+    bullets: list[list[str]] = []
+    heading, current = "", None
     for line in without_fences(results).splitlines():
         if heading_level(line) == 2:
             heading = line[3:].strip()
         match = BULLET_LEAD.match(line)
-        leads = sorted(set(cited_ids(match["lead"], pattern))) if match else []
+        if match:
+            current = [heading, match["lead"], line]
+            bullets.append(current)
+        elif current is not None and line.startswith(" ") and line.strip():
+            current[2] += "\n" + line
+        else:
+            current = None
+    return [(heading, lead, text) for heading, lead, text in bullets]
+
+
+def results_bullet_errors(
+    results: str, rows: list[list[str]], sections: dict[str, str], pattern: str
+) -> list[str]:
+    """docs/results.md has one bullet per registry ID, in registry order, under the `## ` heading
+    of the ID's registry section, led by the row's bold title and the ID alone (`- **Pinsker
+    (KL-1).** ...` for the Statement cell `**Pinsker.** ...`). Status marks follow the registry:
+    a bullet says `*Conditional*` exactly when its row is Conditional, names no other status in
+    italics, and sits under `## Counterexamples` if its row is a Counterexample; no Verified or
+    Conditional row does."""
+    status = {row[0]: row[1] for row in rows}
+    titles = {row[0]: match["title"] for row in rows if (match := REGISTRY_TITLE.match(row[2]))}
+    errors, placed, order = [], {}, []
+    for heading, lead, text in results_bullets(results):
+        leads = sorted(set(cited_ids(lead, pattern)))
         if len(leads) > 1:
             errors.append(f"{RESULTS} bullet led by several IDs: {', '.join(leads)}")
         for rid in leads:
             placed.setdefault(rid, []).append(heading)
+        if len(leads) != 1 or leads[0] not in status:
+            continue
+        rid = leads[0]
+        order.append(rid)
+        if rid in titles and lead != f"{titles[rid]} ({rid}).":
+            errors.append(
+                f"{RESULTS} bullet {rid} is led by {lead!r}, not by the registry title "
+                f"{titles[rid] + f' ({rid}).'!r}"
+            )
+        marks = set(STATUS_MARK.findall(text))
+        if (status[rid] == "Conditional") != ("Conditional" in marks):
+            errors.append(
+                f"{RESULTS} bullet {rid} {'lacks' if status[rid] == 'Conditional' else 'has'} "
+                f"the mark *Conditional*; the registry says {status[rid]}"
+            )
+        errors += [
+            f"{RESULTS} bullet {rid} is marked *{word}*; the registry says {status[rid]}"
+            for word in sorted(marks - {"Conditional", status[rid]})
+        ]
+        if status[rid] == "Counterexample" and heading != COUNTEREXAMPLES:
+            errors.append(f"{RESULTS} Counterexample bullet {rid} is not under {COUNTEREXAMPLES!r}")
+        if status[rid] in {"Verified", "Conditional"} and heading == COUNTEREXAMPLES:
+            errors.append(
+                f"{RESULTS} bullet {rid} is under {COUNTEREXAMPLES!r}; "
+                f"the registry says {status[rid]}"
+            )
     for rid, area in sections.items():
         found = placed.get(rid, [])
         if len(found) != 1:
             errors.append(f"{RESULTS} has {len(found)} bullets led by {rid}, not one")
         elif found[0] != area:
             errors.append(f"{RESULTS} bullet {rid} is under {found[0]!r}, not {area!r}")
+    first = list(dict.fromkeys(order))
+    expected = [row[0] for row in rows if row[0] in first]
+    for listed, wanted in zip(first, expected):
+        if listed != wanted:
+            errors.append(f"{RESULTS} bullet {listed} is out of registry order ({wanted} first)")
+            break
     return errors
 
 
@@ -931,6 +1004,10 @@ def main() -> int:
             errors.append(f"{status} row without a Lean declaration: {row[0]}")
         if status not in CERTIFIED and names:
             errors.append(f"{status} row must not cite certified declarations: {row[0]}")
+        if status in CERTIFIED and not REGISTRY_TITLE.match(row[2]):
+            errors.append(
+                f"{status} row whose Statement does not start with **<title>.**: {row[0]}"
+            )
         # AxiomAudit.lean resolves every cited name in Lean's environment.
     errors += registry_declaration_errors(complete, {d[1]: d[0] for d in declarations})
     areas, area_errors = registry_areas(registry)
@@ -978,7 +1055,13 @@ def main() -> int:
     errors += [f"Missing documentation file: {name}" for name in REQUIRED_DOCS if name not in texts]
     pattern = id_pattern(ids)
     sources = {str(path.relative_to(ROOT)): path.read_text() for path in modules}
-    errors += unknown_id_errors({**texts, **sources}, ids, pattern)
+    # The illustrations cite registry IDs in their docstrings and comments.
+    scripts = {
+        str(path.relative_to(ROOT)): path.read_text()
+        for directory in ILLUSTRATIONS
+        for path in sorted((ROOT / directory).glob("*.py"))
+    }
+    errors += unknown_id_errors({**texts, **sources, **scripts}, ids, pattern)
     errors += status_word_errors(texts, {row[0]: row[1] for row in complete}, pattern)
     errors += link_errors(texts)
     if README in texts:
@@ -992,7 +1075,7 @@ def main() -> int:
             errors += literature_map_errors(readme, texts[LITERATURE], pattern)
     if RESULTS_ONE_BULLET_PER_ID and RESULTS in texts:
         sections = {rid: area for area, area_ids in areas for rid in area_ids}
-        errors += results_bullet_errors(texts[RESULTS], sections, pattern)
+        errors += results_bullet_errors(texts[RESULTS], complete, sections, pattern)
 
     scanned = {*modules, *ROOT.glob("*.md"), *ROOT.joinpath("docs").rglob("*.md")}
     for path in sorted(scanned | {ROOT / name for name in texts}):

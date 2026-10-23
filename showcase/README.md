@@ -32,23 +32,9 @@ not run them, and nothing in `tests/` imports this directory (the stdlib-only ch
 `experiments/`). Run them from the repository root:
 
 ```bash
-uv run --no-project --with numpy --with matplotlib python showcase/memorization.py
-uv run --no-project --with numpy --with matplotlib python showcase/ddpm_bound.py
-uv run --no-project --with numpy --with matplotlib python showcase/ddpm_variance.py
-uv run --no-project --with numpy --with matplotlib python showcase/ode_vs_sde.py
-uv run --no-project --with numpy --with matplotlib python showcase/step_counterexample.py
-uv run --no-project --with numpy --with matplotlib python showcase/tv_vs_kl.py
-uv run --no-project --with numpy --with matplotlib python showcase/proximal_logconcave.py
-uv run --no-project --with numpy --with matplotlib python showcase/proximal_sharp_rate.py
-uv run --no-project --with numpy --with matplotlib python showcase/ou_decay.py
-uv run --no-project --with numpy --with matplotlib python showcase/path_kl.py
-uv run --no-project --with numpy --with matplotlib python showcase/ddpm_rate.py
-uv run --no-project --with numpy --with matplotlib python showcase/ode_smooth.py
-uv run --no-project --with numpy --with matplotlib python showcase/fp_uniqueness.py
-uv run --no-project --with numpy --with matplotlib python showcase/gauss_output.py
-uv run --no-project --with numpy --with matplotlib python showcase/ode_lipschitz.py
-uv run --no-project --with numpy --with matplotlib python showcase/gauss_output_ext.py
-uv run --no-project --with numpy --with matplotlib python showcase/ode_third_mode.py
+for script in showcase/[a-z]*.py; do
+  uv run --no-project --with numpy --with matplotlib python "$script"
+done
 ```
 
 Each script uses fixed seeds, prints its key numbers, writes a PNG to `showcase/figures/`, and
@@ -281,10 +267,11 @@ the same bound as $`\mathrm{KL}(\rho_{k+1} \Vert \pi) \le \ldots / (2(k+1)\eta)`
 `klDiv_iterate_le_div`). For a point mass the only coupling is $`\delta_{x_0} \otimes \pi`$, so the
 right-hand side is $`(x_0^2 + \mathbb{E}_\pi Y^2)/(2k\eta) = (x_0^2 + 2)/(2k\eta)`$. No finite
 initial KL is needed, and the figure starts from $`\mathrm{KL} = \infty`$. The proof uses the
-shifted-composition argument of Altschuler and Chewi (arXiv:2311.14520). Chen, Chewi, Salim and
-Wibisono (arXiv:2202.06386) have this rate with $`1/(k\eta)`$; the constant $`1/(2k\eta)`$ is
-stated for $`C^2`$ potentials by Pedrotti (arXiv:2601.13259, Cor. 3.5), and PX-5 covers every
-convex $`f`$, such as the non-differentiable $`\lvert x \rvert`$ here.
+shifted-composition argument of Altschuler and Chewi (arXiv:2311.14520). The $`1/k`$ rate is that
+of Chen, Chewi, Salim and Wibisono (arXiv:2202.06386, Thm 2); the constant $`1/(2k\eta)`$ is the
+one the shifted-composition argument gives, as in the log-concave case of Pedrotti
+(arXiv:2601.13259, Cor. 3.5). PX-5 holds for every convex $`f`$, such as the non-differentiable
+$`\lvert x \rvert`$ here.
 
 **Key numbers.** The bound holds at every k ≤ 200 for all three starts (asserted), and KL is
 nonincreasing (asserted; `klDiv_proxKernel_comp_le_self`). At k = 1: KL = 1.13, 7.93, 22.9
@@ -322,9 +309,9 @@ for $`f = \alpha x^2/2 + W`$ with $`W`$ measurable and $`a \le W \le b`$, every 
 KL. For the Gaussian target the chain is linear: the mean contracts by $`c = 1/(1 + \alpha\eta)`$
 per step and the variance gap $`s - 1/\alpha`$ by $`c^2`$. So a mean-shifted start
 $`\mathcal{N}(m, 1/\alpha)`$ has $`\mathrm{KL}_k = \alpha c^{2k} m^2/2`$, **equality** in PX-3 at
-every k (the same sharpness as EX-3). The rate is Theorem 3 of Chen, Chewi, Salim and Wibisono
-(arXiv:2202.06386), whose §4.4 observes this sharpness on Gaussians (see also Mitra and Wibisono,
-arXiv:2410.10699, App. G.2); PX-4 combines that theorem with the Holley–Stroock lemma.
+every k (the same sharpness as EX-3). The rate is the KL part of Theorem 3 of Chen, Chewi, Salim
+and Wibisono (arXiv:2202.06386), whose §4.4 observes this sharpness on Gaussians (see also Mitra and
+Wibisono, arXiv:2410.10699, App. G.2); PX-4 combines that KL bound with the Holley–Stroock lemma.
 
 **Key numbers.** Grid vs closed form on the Gaussian target: relative error ≤ 3e-7. Mean shift:
 $`\mathrm{KL}_k/\text{bound} = 1`$ to 1e-12 (asserted). $`\mathcal{N}(0, 0.05)`$: variance mode
@@ -438,10 +425,9 @@ grows roughly like $`1/\eta`$.
 **Caveats.** The growth of the Lipschitz constant as $`\eta \to 0`$ is numerical; Lean proves only
 the two-sided bound for this construction.
 
-**Prior work.** The closest earlier result is Li, Di and Gu (arXiv:2410.14237, Thm 3.1): a smooth
-score within ε of the true score everywhere for which the continuous-time probability-flow ODE stays
-a fixed TV distance away from $`\mathcal{N}(0, 1)`$, however small ε is. DF-7 is a discrete-time
-statement for every data law with finite second moment, whose error has a large Lipschitz constant.
+**Prior work.** A related result is Li, Di and Gu (arXiv:2410.14237, Thm 3.1): a smooth score
+within ε of the true score everywhere for which the continuous-time probability-flow ODE stays a
+fixed TV distance away from $`\mathcal{N}(0, 1)`$, however small ε is.
 
 ## 13. Fokker–Planck with a Lipschitz, unbounded drift (`fp_uniqueness.py` → `figures/fp_uniqueness.png`)
 
@@ -502,10 +488,10 @@ this tightness.
 
 **Caveats.** The comparison is with the exact-score deterministic output, not with the data.
 
-**Prior work.** Li, Wei, Chen and Chi (arXiv:2306.09251, §3.2) suggest a Wasserstein metric as a way
-around their TV counterexample; DF-9 states the pairing of TV-far and transport-close as a theorem.
-The transport half is a Grönwall-type stability estimate; for the continuous-time ODE and Lipschitz
-test functions see Beltran-Velez et al. (arXiv:2606.19162, Prop. 3.2).
+**Prior work.** Li, Wei, Chen and Chi (arXiv:2306.09251, §3.2) suggest a Wasserstein metric for
+their TV counterexample. The transport half is a Grönwall-type stability estimate; for the
+continuous-time ODE and Lipschitz test functions see Beltran-Velez et al.
+(arXiv:2606.19162, Prop. 3.2).
 
 ## 16. Gaussian data: output bounds for several $`v`$, and $`\sigma^2 = \beta`$ (`gauss_output_ext.py` → `figures/gauss_output_ext.png`)
 

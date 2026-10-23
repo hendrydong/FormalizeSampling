@@ -44,8 +44,8 @@ Contents:
    Li–Di–Gu (2024), Nie et al. (2024), Ashiq et al. (2026), Pidstrigach (2022), Li–Chen–Li (2024),
    Gu et al. (2023)
 3. [Proximal sampler](#proximal-sampler): Lee–Shen–Tian (2021), Chen–Chewi–Salim–Wibisono (2022),
-   Altschuler–Chewi (2023), Pedrotti (2026), Mitra–Wibisono (2025), Holley–Stroock (1987),
-   Bakry–Émery (1985)
+   Altschuler–Chewi (2023), Pedrotti (2026), Mitra–Wibisono (2025), Gross (1975), Holley–Stroock
+   (1987), Bakry–Émery (1985)
 4. [Flows and particle methods](#flows-and-particle-methods): DiPerna–Lions (1989),
    Bogachev–Krylov–Röckner–Shaposhnikov (2015), SVGD, Wibisono (2018), PFG
 5. [Score-based Monte Carlo samplers](#score-based-monte-carlo-samplers): rdMC, RS-DMC, SPS, RTK
@@ -278,8 +278,9 @@ It gives
 H(P^{X_{t_N}} \vert P^{X^{\mathrm{EM}}_{t_N}}) \le \varepsilon_{\mathrm{score}}^2 + \kappa d \log((1
 - t_0)/\delta) + 2\kappa \mathbb{E}\vert X_1 \vert^2 + (t_0/2)(d + \mathbb{E}\vert X_1 \vert^2),
 ```
-with no $`\kappa dT`$ term (Remark 3.2). Corollary 3.2 is the TV form. Theorem 3.2 assumes finite
-Fisher information and needs no early stopping. Theorems 3.3–3.4 give intrinsic-dimension bounds.
+with no $`\kappa dT`$ term (Remark 3.2). Corollary 3.2 gives the number of steps for a target TV
+error. Theorem 3.2 assumes finite Fisher information and needs no early stopping. Theorems 3.3–3.4
+give intrinsic-dimension bounds.
 
 | Step | Move | Library | Status |
 |---|---|---|---|
@@ -287,8 +288,9 @@ Fisher information and needs no early stopping. Theorems 3.3–3.4 give intrinsi
 | DDPM sampler as the Euler–Maruyama discretisation (§3.1) | setting | `Diffusion.algKernel`, `Diffusion.scoreMean`, `DiffusionDiscretization.betaVar`, `Diffusion.betaGrid` | Verified as definitions (DF-4 setting); the identification with the Föllmer discretisation is not formalised |
 | Data processing and Girsanov for the path KL (Lemmas A.4–A.5) | error accumulation | DF-5: `DiffusionPath.klDiv_truePath_algPath`, `DiffusionPath.klDiv_output_le_path`, `DiffusionPath.klDiv_truePath_betaVar_le` | Related statement (DF-5, Verified): a discrete-time chain rule; Girsanov's theorem is not formalised |
 | Discretisation bound via martingale increments of $`v_t`$ and summation by parts (§A.7) | differentiation | DF-4: `DiffusionDiscretization.lintegral_klDiv_revKernel_fwdVar_eq`, `DiffusionDiscretization.sq_le_mul_heatFisherInfo`, `DiffusionDiscretization.sum_betaStep_le_of_le_mul`, `DiffusionDiscretization.sum_lintegral_klDiv_revKernel_betaVar_le_of_le_mul` | Proves a version (DF-4, Verified) by an exact per-step formula and the trace Cramér–Rao bound, not by martingale arguments |
-| End-to-end bound (Theorem 3.1, Corollary 3.1; TV in Corollary 3.2) | error accumulation | `DiffusionDiscretization.klDiv_output_le_betaVar`, `DiffusionDiscretization.klDiv_output_le_betaVar_explicit`, `DiffusionDiscretization.tvSup_output_le_betaVar` (DF-4); `DiffusionPath.klDiv_truePath_betaVar_le_explicit` (DF-5) | Verified (DF-4, DF-5). Proves a version of Theorem 3.1 for the same sampler, with a different grid condition and constants |
+| End-to-end bound (Theorem 3.1, Corollary 3.1), with TV by Pinsker | error accumulation | `DiffusionDiscretization.klDiv_output_le_betaVar`, `DiffusionDiscretization.klDiv_output_le_betaVar_explicit`, `DiffusionDiscretization.tvSup_output_le_betaVar` (DF-4); `DiffusionPath.klDiv_truePath_betaVar_le_explicit` (DF-5) | Verified (DF-4, DF-5). Proves a version of Theorem 3.1 for the same sampler, with a different grid condition and constants |
 | No $`\kappa dT`$ term compared with the variance $`\beta/\alpha^2`$ (Remark 3.2) | exact computation | For $`\sigma^2 = \beta/\alpha^2`$ and $`M \le d`$, the per-step sum is at least $`(d/2)\sum_k (2h_k - \beta_k)`$ (`DiffusionDiscretization.sum_lintegral_klDiv_revKernel_ddpm_ge`), and on uniform grids the path KL grows linearly in $`t_N - t_1`$ (`DiffusionPath.klDiv_truePath_ddpm_ge_uniform`) | Related statement (DF-4, DF-5; Verified) |
+| Step count for a target TV error (Corollary 3.2) | — | not formalised; the TV bound itself is `DiffusionDiscretization.tvSup_output_le_betaVar` (DF-4) | Not formalised as a theorem |
 | Finite Fisher information without early stopping (Theorem 3.2), intrinsic dimension (§3.2), score-matching identity (Remark 3.1) | — | not formalised | Not formalised |
 
 ### Li–Yan (2024)
@@ -819,6 +821,31 @@ of the Proximal Sampler and show that Theorems 1–2 are tight for KL on Gaussia
 | Appendix G.2 (Proposition 2): Gaussian iterates of the Proximal Sampler, tightness | exact computation | EX-3: `ProximalSharpPi.klDiv_proxKernelPi_comp_gaussTarget`, `ProximalSharpPi.not_exists_rate_lt_pi`, `ProximalSharp.klDiv_proxKernel_comp_gaussTarget` | Verified (EX-3); a related instance: starts $`\mathcal{N}(m, \alpha^{-1} I)`$ with exact factor $`(1 + \alpha\eta)^{-2}`$ per step and no smaller factor; the start $`\mathcal{N}(\mathbf{1}, I)`$ with a covariance mismatch is not formalised |
 | Appendix G.1: biased limit of ULA on Gaussian targets | exact computation | CE-03: `Counterexamples.ULADiscretization.ulaStep_biasedGaussian`, `Counterexamples.ULADiscretization.ulaStep_gaussianReal_eq_self_iff` | Special case (CE-03; Counterexample status, refuting the general claim that ULA leaves its target invariant): 1D standard Gaussian target, where the ULA-invariant centred Gaussian is $`\mathcal{N}(0, 2/(2 - h))`$; Proposition 1's KL rate not formalised |
 | Theorem 1 (ULA under a $`\Phi`$-Sobolev inequality), Corollaries 1–2 | contraction | not formalised | Not formalised |
+
+### Gross (1975)
+
+Leonard Gross. Logarithmic Sobolev inequalities. American Journal of Mathematics 97 (1975),
+1061–1083. [doi:10.2307/2373688](https://doi.org/10.2307/2373688) (not on arXiv).
+
+**Setting.** Not an algorithm: the log-Sobolev inequality of a Gaussian measure. It enters the
+proximal sampler through the forward (heat-flow) step, whose law inherits a log-Sobolev inequality
+by convolution (PX-2), and, with the Holley–Stroock lemma, through the perturbed Gaussian targets
+(PX-4).
+
+**Main result, as used here.** For the standard Gaussian measure $`\gamma`$ on $`\mathbb{R}^n`$,
+$`\int f^2 \log \lvert f \rvert \, d\gamma \le \int \Vert \nabla f \Vert^2 \, d\gamma + \Vert f \Vert_2^2 \log \Vert f \Vert_2`$,
+that is $`\mathrm{Ent}_\gamma(f^2) \le 2 \int \Vert \nabla f \Vert^2 \, d\gamma`$, with a constant
+that does not depend on $`n`$. The paper obtains it from an inequality on the two-point space,
+passing to the Gaussian limit with the central limit theorem, and it shows that log-Sobolev
+inequalities are equivalent to Nelson's hypercontractivity inequalities.
+
+| Step | Move | Library | Status |
+|---|---|---|---|
+| Gaussian log-Sobolev inequality, functional form, for $`\mathcal{N}(0, tI)`$ and every $`t \gt 0`$ | contraction | KL-6: `GaussianFunctionalLSI.functionalLSI_gaussianReal` (1D), `GaussianFunctionalLSIPi.functionalLSIPi_gaussian` (`Fin d → ℝ`); unbounded test functions: `LogSobolevExtensionPi.ent_sq_le_of_functionalLSIPi` | Verified (KL-6); proves a version of the inequality for test functions in `LSIClass` / `LSIClassPi` (differentiable, bounded, with bounded gradient and a positive lower bound), extended to positive $`C^1`$ functions with $`g^2`$, $`g^2 \log g^2`$ and $`\Vert \nabla g \Vert^2`$ integrable |
+| The same in KL–Fisher form: $`\mathrm{KL}(\rho \Vert \mathcal{N}(0, vI)) \le (v/2) \, I(\rho \Vert \mathcal{N}(0, vI))`$ | differentiation | KL-5: `GaussianLSIZero.klDiv_le_fisher0` (1D), `GaussianLSIZeroPi.klDiv_le_fisher0` (`Fin d → ℝ`); along the heat flow `GaussianLSIPi.heatKL_le_heatFisher_gaussian`, `GaussianLSIPi.heatFisher_gaussian_le` | Verified (KL-5): for $`\rho`$ with a positive differentiable density, finite second moment and finite relative Fisher information, and along the heat flow from every law with finite second moment |
+| Proof from the two-point space by the central limit theorem | — | not formalised; the library derives the functional form from the KL–Fisher form (density $`\propto g^2 \varphi_t`$), which it proves from the de Bruijn identity and the decay of Fisher information along the heat flow | Not formalised (the paper's route); the conclusion is proved by another route (previous rows) |
+| Use for the proximal sampler: $`\mathrm{LSI}(\pi, C)`$ gives $`\mathrm{LSI}(\pi * \mathcal{N}(0, tI), C + t)`$; with Holley–Stroock, the perturbed Gaussian targets | contraction | KL-6: `GaussianFunctionalLSI.functionalLSI_heatKernel_comp_of_targetLSI` (1D), `LogSobolevTensorPi.functionalLSIPi_map_add` (`Fin d → ℝ`); PX-4: `GaussianFunctionalLSIPi.functionalLSIPi_targetPi_gaussPotentialPi_add` | Verified (KL-6, PX-4); the first gives the forward-step contraction of PX-2 |
+| Equivalence of log-Sobolev inequalities with hypercontractivity | contraction | not formalised | Not formalised |
 
 ### Holley–Stroock (1987)
 

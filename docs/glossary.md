@@ -46,9 +46,8 @@ It never means that the noise and score *random variables* coincide (CE-02).
 
 ## Gaussian and diffusion conventions
 
-- Mathlib's `gaussianReal m v` is $`\mathcal{N}(m, v)`$ with **variance** `v : ℝ≥0`;
-  `gaussianPDFReal m v` is its Lebesgue density. $`\sigma`$ always denotes a standard deviation,
-  $`\sigma^2`$ a variance.
+- $`\sigma`$ always denotes a standard deviation and $`\sigma^2`$ a variance; Mathlib's Gaussians
+  take the variance ([conventions](../CONTRIBUTING.md#conventions)).
 - Overdamped Langevin with preconditioner $`A`$:
   $`dX = A \nabla \log p_\star(X) \, dt + \sqrt{2A} \, dW`$. Its generator is
   $`L\varphi = (A \nabla \log p_\star) \cdot \nabla \varphi + \sum_{ij} A_{ij} \partial_i \partial_j \varphi`$
@@ -64,10 +63,4 @@ It never means that the noise and score *random variables* coincide (CE-02).
 
 ## Statuses
 
-| Status | Meaning |
-| --- | --- |
-| Verified | Proved in Lean; hypotheses are explicit, satisfiable regularity or modelling assumptions that do not encode the main step |
-| Conditional | Proved in Lean from a named hypothesis that packages unproved mathematics (PDE uniqueness, Fokker–Planck for an SDE, a log-Sobolev inequality, an oracle error bound) |
-| Counterexample | A Lean-verified refutation of a tempting claim |
-| Planned | Statement and assumptions written down; no Lean proof yet |
-| Open | Research question without a fixed formal statement |
+See [README, Statuses](../README.md#statuses).

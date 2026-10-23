@@ -17,11 +17,10 @@ A coupling of `(ρ 0, π)` is a finite measure `γ₀` on `ℝ × ℝ` with thes
 
 * `klDiv_iterate_le_div` (**main theorem**): for every `k`,
   `KL(ρ (k + 1) ‖ π) ≤ ∫⁻ (x - y)² / (2 (k + 1) η) dγ₀(x, y)`, and `klDiv_iterate_le_div'`:
-  `KL(ρ k ‖ π) ≤ ∫⁻ (x - y)² / (2 k η) dγ₀` for `k ≥ 1`. This is the `1/k` rate of
-  Chen–Chewi–Salim–Wibisono (2022, log-concave case), here with the constant `1/(2kη)` (their
-  statement has `1/(kη)`; `1/(2kη)` is what the shifted-composition argument below gives, and it
-  is stated for `C²` potentials by Pedrotti, 2026, arXiv:2601.13259, Cor. 3.5), for every
-  coupling, in particular for the quantile coupling.
+  `KL(ρ k ‖ π) ≤ ∫⁻ (x - y)² / (2 k η) dγ₀` for `k ≥ 1`, for every coupling, in particular for
+  the quantile coupling. The `1/k` rate is that of Chen–Chewi–Salim–Wibisono (2022, Thm 2); the
+  constant `1/(2kη)` is the one the shifted-composition argument below (Altschuler–Chewi 2023,
+  Thm 3.2) gives, as in the log-concave case of Pedrotti (2026, arXiv:2601.13259, Cor. 3.5).
 * `klDiv_proxKernel_comp_le_self`: `KL(P ρ ‖ π) ≤ KL(ρ ‖ π)` (data processing).
 
 ## Method: shifted composition (no EVI)

@@ -6,7 +6,7 @@ public import FormalizeSampling.Foundations.MeasureHelpers
 /-!
 # DT-1: descent lemma for one deterministic transport step (dimension one)
 
-Registry ID: **DT-1** (`docs/blueprint.md`). Status: **Verified** (no named unproved
+Registry ID: **DT-1** (`docs/theorem_registry.md`). Status: **Verified** (no named unproved
 hypothesis; all hypotheses are regularity / integrability assumptions, satisfied e.g. by a
 Gaussian current law `ρ`, a Gaussian target `π` and an affine velocity `v`).
 

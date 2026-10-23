@@ -23,11 +23,10 @@ and a finite coupling `γ₀` of `(ρ 0, π)`.
 * `klDiv_iteratePi_le_div_of_convexOn` (**main theorem**): for every `k`,
   `KL(ρ (k + 1) ‖ π) ≤ ∫⁻ |x - y|² / (2 (k + 1) η) dγ₀(x, y)`.
 
-The constant `1/(2(k+1)η)` comes from the shifted-composition argument of Altschuler–Chewi
-(2023) (`RGOCouplingWeak.klDiv_iterate_le_shifted_of_weak`); Chen–Chewi–Salim–Wibisono (2022)
-have `1/(kη)`. The constant `1/(2kη)` is stated for `C²` potentials, and any second initial law,
-by Pedrotti (2026, arXiv:2601.13259, Cor. 3.5); here `f` need only be convex (finite) with
-`∫ e^{-f} < ∞`, and the second law is `π`.
+The `1/k` rate is that of Chen–Chewi–Salim–Wibisono (2022, Thm 2); the constant `1/(2(k+1)η)`
+is the one the shifted-composition argument of Altschuler–Chewi (2023, Thm 3.2) gives
+(`RGOCouplingWeak.klDiv_iterate_le_shifted_of_weak`), as in the log-concave case of Pedrotti
+(2026, arXiv:2601.13259, Cor. 3.5).
 
 ## Not proved here
 

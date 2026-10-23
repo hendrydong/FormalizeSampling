@@ -5,9 +5,10 @@ public import FormalizeSampling.Flow.KLDecay
 /-!
 # FL-3: KL dissipation along an approximate velocity (sharp and projection forms)
 
-Blueprint item **FL-3**, stated at one time for a general measure `μ` on `Fin d → ℝ` (standing
-for the law `ρ_t`), a constant positive-definite preconditioner `H`, a velocity field `f`, a
-state-score field `s` (standing for `∇log ρ_t`) and a target score `sStar` (`∇log p⋆`).
+Registry row **FL-3** (`docs/theorem_registry.md`), stated at one time for a general measure `μ`
+on `Fin d → ℝ` (standing for the law `ρ_t`), a constant positive-definite preconditioner `H`, a
+velocity field `f`, a state-score field `s` (standing for `∇log ρ_t`) and a target score `sStar`
+(`∇log p⋆`).
 
 ## Conventions
 

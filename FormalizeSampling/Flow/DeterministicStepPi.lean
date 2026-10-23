@@ -11,8 +11,8 @@ public import FormalizeSampling.Identities.KLTransportVariation
 /-!
 # DT-1: descent lemma for one deterministic transport step (dimension `d`)
 
-Registry ID: **DT-1** (`docs/blueprint.md`), `d`-dimensional form. The one-dimensional version
-is `FormalizeSampling.Flow.DeterministicStep`; this file reuses its scalar inequalities
+Registry ID: **DT-1** (`docs/theorem_registry.md`), `d`-dimensional form. The one-dimensional
+version is `FormalizeSampling.Flow.DeterministicStep`; this file reuses its scalar inequalities
 `sub_sq_le_log_one_add` and `le_quadratic_of_deriv2_le`.
 
 ## Setting
