@@ -9,8 +9,9 @@
   have a row in `docs/theorem_registry.md`, with IDs from `docs/blueprint.md`, section 4.
 - `docs/declaration_index.md` is generated: after adding or changing a documented theorem, run
   `python3 scripts/check_contracts.py --write-index`; the checker rejects a stale index.
-- Library Lean files have lines of at most 100 characters; they and the Markdown files at the
-  top level and in `docs/` have no trailing whitespace.
+- Library Lean files have lines of at most 100 characters; they, the Markdown files at the top
+  level and in `docs/`, and `showcase/README.md` and `experiments/README.md` have no trailing
+  whitespace.
 - A module imports only modules of its own or a lower layer: `Foundations` < `Identities`,
   `Kernels` < `Flow`, `ScoreEstimation` < `Samplers` < `Examples`, `Counterexamples` < `Audit`.
   A tool needed by a lower layer goes into that layer. A new module is imported by

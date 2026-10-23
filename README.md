@@ -340,8 +340,8 @@ Step-by-step decomposition of each work into these moves:
 - **Non-vacuity.** For every registry row, a module in `FormalizeSampling/Audit/` applies the
   theorem to a concrete non-degenerate instance and discharges all of its hypotheses inside
   Lean, so no headline theorem holds only because its assumptions are contradictory.
-- **Encoding.** Statements are checked for encoding pitfalls, such as real-valued `KL.toReal`
-  hiding an infinite divergence, or an error averaged under the wrong law.
+- **Encoding.** Statements are checked for encoding pitfalls, such as a real-valued
+  `(klDiv …).toReal` hiding an infinite divergence, or an error averaged under the wrong law.
 - **Fidelity.** Each statement is compared with the literature and documented with its scope.
   This last step is a human reading, not a kernel guarantee.
 
@@ -410,15 +410,17 @@ export PATH=$HOME/.elan/bin:$PATH
 lake exe cache get                      # download prebuilt Mathlib
 lake build                              # build the whole library
 lake build FormalizeSampling.Core       # or only the sampler-independent core
-lake env lean scripts/AxiomAudit.lean   # axiom audit + resolve every registry and index name
-python3 scripts/check_contracts.py      # modules, exports, layering, docstrings, forbidden constructs, registry
+lake env lean scripts/AxiomAudit.lean   # axiom audit; resolve names in registry, index and docs
+python3 scripts/check_contracts.py      # modules, docstrings, trust boundary, registry and docs
 python3 -m unittest discover -s tests -v
 uvx ruff@0.16.10 check scripts experiments tests showcase  # ruff pinned in requirements-dev.txt
 uvx ruff@0.16.10 format --check scripts experiments tests showcase
 ```
 
 CI (`.github/workflows/lean.yml`) runs the same checks, installing `ruff` from
-`requirements-dev.txt`; it is started manually from the repository's Actions tab.
+`requirements-dev.txt`, and compiles the Lean examples of [Using
+FormalizeSampling](#using-formalizesampling); it is started manually from the repository's Actions
+tab.
 
 ## Using FormalizeSampling
 

@@ -31,10 +31,16 @@ jobs:
           test: "false"
           lint: "false"
           use-mathlib-cache: "true"
-      - name: Audit every project declaration for axioms and resolve registry names
+      - name: Audit every project declaration for axioms and resolve the names cited in the docs
         run: lake env lean scripts/AxiomAudit.lean
-      - name: Check module headers, exports, import layering, docstrings, forbidden constructs and the theorem registry
+      - name: Check modules, exports, layering, docstrings, the trust boundary, the registry and the docs
         run: python3 scripts/check_contracts.py
+      - name: Compile the Lean examples in the README
+        run: |
+          python3 scripts/check_contracts.py --extract-examples "$RUNNER_TEMP/readme-examples"
+          for example in "$RUNNER_TEMP"/readme-examples/*.lean; do
+            lake env lean "$example"
+          done
       - name: Check Python style
         run: |
           python3 -m venv .venv

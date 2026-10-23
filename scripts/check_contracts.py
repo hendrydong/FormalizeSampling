@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
-"""Check proof-source hygiene, module headers, complete exports, the import layering, and the
-theorem registry.
+"""Check proof-source hygiene, module headers, complete exports, the import layering, the
+theorem registry, and the public documentation against the registry and the sources.
 
 Every library file is a Lean module (`module` header, Mathlib's conventions); the root
 `FormalizeSampling.lean` and `FormalizeSampling/Core.lean` re-export their modules with
 `public import`. This source checker complements the Lean kernel and the transitive axiom audit
-(scripts/AxiomAudit.lean); it replaces neither. --write-index refreshes
-docs/declaration_index.md (fully qualified theorem names with the opening of their docstrings,
-grouped by top-level directory).
+(scripts/AxiomAudit.lean, which also resolves the Lean names cited in the documentation); it
+replaces neither. --write-index refreshes docs/declaration_index.md (fully qualified theorem names
+with the opening of their docstrings, grouped by top-level directory). --extract-examples DIR
+writes the README's Lean examples (the ```lean blocks that start with `import`) to DIR, one file
+each, so that they can be compiled with `lake env lean`.
+
+The documentation checks read an explicit list of public files (DOC_FILES): registry IDs are
+contiguous per prefix and every ID mentioned exists; status words next to IDs agree with the
+registry; the README counts sentence, moves table, literature map and Statuses section agree
+with the registry, the sources and docs/literature.md; registry rows cite documented theorems
+and list their modules; relative links and their anchors resolve.
 """
 
 from __future__ import annotations
@@ -15,37 +23,45 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LIBRARY = "FormalizeSampling"
 REGISTRY = "docs/theorem_registry.md"
 INDEX = "docs/declaration_index.md"
-# Core theorem IDs from docs/blueprint.md, section 4, and the counterexample library.
-REQUIRED_IDS = (
-    {f"KL-{i}" for i in range(1, 7)}
-    | {f"ID-{i}" for i in range(1, 5)}
-    | {f"FL-{i}" for i in range(1, 6)}
-    | {f"SE-{i}" for i in range(1, 5)}
-    | {f"KR-{i}" for i in range(1, 3)}
-    | {
-        "GI-1",
-        "GI-2",
-        "MH-1",
-        "PX-1",
-        "PX-2",
-        "PX-3",
-        "PX-4",
-        "PT-1",
-        "DT-1",
-        "EX-1",
-        "EX-2",
-        "EX-3",
-    }
-    | {f"CE-{i:02d}" for i in range(1, 9)}
+README = "README.md"
+RESULTS = "docs/results.md"
+LITERATURE = "docs/literature.md"
+# The public Markdown files checked against the registry, the sources and each other (a missing
+# file is skipped); scripts/AxiomAudit.lean resolves their Lean names. Other Markdown files, such
+# as notes kept outside the public repository, are not read.
+DOC_FILES = (
+    README,
+    "CONTRIBUTING.md",
+    RESULTS,
+    LITERATURE,
+    "docs/statement_audit.md",
+    "docs/glossary.md",
+    REGISTRY,
+    "showcase/README.md",
+    "experiments/README.md",
 )
-EXTRA_ID = re.compile(r"^(?:[A-Z]{2}-\d+|CE-\d{2})$")  # further core results and counterexamples
+REQUIRED_DOCS = (README, RESULTS, LITERATURE)
+# Registry IDs: a two-letter prefix and a number, numbered 1, 2, ... within each prefix.
 ROW_ID = re.compile(r"^\| (?P<id>(?:[A-Z]{2}-\d+|CE-\d{2})) \|")
+# docs/results.md has one bullet per registry ID, led by the ID (`- **Pinsker (KL-1).** ...`),
+# under the `## ` heading of the ID's registry section. Not enforced yet.
+RESULTS_ONE_BULLET_PER_ID = False
+BULLET_LEAD = re.compile(r"^- \*\*(?P<lead>.+?)\*\*")
+# The README counts sentence; every space may be a line break.
+COUNTS = re.compile(
+    r"About\s+(?P<lines>[\d,]+)\s+lines\s+of\s+Lean,\s+(?P<theorems>[\d,]+)\s+documented\s+"
+    r"theorems\s+and\s+(?P<rows>\d+)\s+core\s+results:\s+(?P<Verified>\d+)\s+Verified,\s+"
+    r"(?P<Counterexample>\d+)\s+formal\s+counterexamples,\s+(?P<Conditional>\d+)\s+Conditional\."
+)
+URL = re.compile(r"https?://[^\s)\]>]+")
+LINK = re.compile(r"\]\((?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\)")  # inline links and images
 STATUSES = {"Verified", "Conditional", "Counterexample", "Planned", "Open"}
 CERTIFIED = {"Verified", "Conditional", "Counterexample"}
 COLUMNS = 6  # ID | Status | Statement | Lean declarations | Assumptions and scope | Module
@@ -315,10 +331,332 @@ def registry_rows(text: str) -> list[list[str]]:
     return rows
 
 
+def registry_sections(text: str) -> dict[str, str]:
+    """The `## ` heading of the registry section in which each row sits."""
+    sections, heading = {}, ""
+    for line in text.splitlines():
+        if line.startswith("## "):
+            heading = line[3:].strip()
+        match = ROW_ID.match(line)
+        if match:
+            sections[match["id"]] = heading
+    return sections
+
+
+def id_pattern(ids: list[str]) -> str:
+    """Regex of ID tokens with a registry prefix; tokens with other prefixes are not IDs."""
+    prefixes = sorted({rid.split("-")[0] for rid in ids})
+    return rf"\b(?:{'|'.join(prefixes) or '(?!)'})-\d+\b"
+
+
+def cited_ids(text: str, pattern: str) -> list[str]:
+    """ID tokens of `text`, plus the IDs inside same-prefix ranges such as `KL-1 … KL-4`."""
+    found = re.findall(pattern, text)
+    for first, last in re.findall(rf"({pattern})\s*(?:…|\.\.\.?|–)\s*({pattern})", text):
+        prefix, start = first.split("-")
+        other, stop = last.split("-")
+        if other == prefix:
+            found += [f"{prefix}-{i:0{len(start)}d}" for i in range(int(start) + 1, int(stop))]
+    return found
+
+
+def contiguity_errors(ids: list[str]) -> list[str]:
+    """Within each prefix the registry numbers its rows 1, 2, ..., n."""
+    numbers: dict[str, list[int]] = {}
+    for rid in ids:
+        prefix, number = rid.split("-")
+        numbers.setdefault(prefix, []).append(int(number))
+    return [
+        f"Registry IDs {prefix}-* are not numbered 1 to {len(found)}: {sorted(found)}"
+        for prefix, found in sorted(numbers.items())
+        if sorted(found) != list(range(1, len(found) + 1))
+    ]
+
+
+def without_fences(text: str) -> str:
+    """Blank out fenced code blocks, keeping line numbers."""
+    lines, fenced = [], False
+    for line in text.splitlines():
+        fence = line.lstrip().startswith("```")
+        lines.append("" if fenced or fence else line)
+        fenced ^= fence
+    return "\n".join(lines)
+
+
+def heading_level(line: str) -> int:
+    """Level of an ATX heading line (`## Title` is 2), or 0."""
+    level = len(line) - len(line.lstrip("#"))
+    return level if 0 < level <= 6 and line[level : level + 1] == " " else 0
+
+
+def section(text: str, heading: str) -> str | None:
+    """Body of the section with heading line `heading` (such as `## Statuses`), up to the next
+    heading of the same or a higher level; `None` if there is no such heading."""
+    lines = without_fences(text).splitlines()
+    if heading not in lines:
+        return None
+    body = []
+    for line in lines[lines.index(heading) + 1 :]:
+        if 0 < heading_level(line) <= heading_level(heading):
+            break
+        body.append(line)
+    return "\n".join(body)
+
+
+def table_cells(line: str) -> list[str]:
+    """Cells of a Markdown table row, split at each `|` that is not escaped or in code."""
+    cells, cell, in_code, previous = [], "", False, ""
+    for char in line.strip().removeprefix("|").removesuffix("|"):
+        in_code ^= char == "`"
+        if char == "|" and not in_code and previous != "\\":
+            cells.append(cell.strip())
+            cell = ""
+        else:
+            cell += char
+        previous = char
+    return [*cells, cell.strip()]
+
+
+def table_rows(text: str, header: str) -> list[list[str]] | None:
+    """Cells of the body rows of the first table whose header row starts with `header`."""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith(header):
+            rows = []
+            for row in lines[i + 2 :]:
+                if not row.startswith("|"):
+                    break
+                rows.append(table_cells(row))
+            return rows
+    return None
+
+
+def counts_errors(readme: str, statuses: list[str], lines: int, theorems: int) -> list[str]:
+    """The README counts sentence: Lean lines floored to a multiple of 1000, documented theorems
+    floored to a multiple of 100, and the exact numbers of registry rows and of each status."""
+    match = COUNTS.search(readme)
+    if not match:
+        return [f"No counts sentence (About N lines of Lean, ...) in {README}"]
+    expected = {
+        "lines": lines // 1000 * 1000,
+        "theorems": theorems // 100 * 100,
+        "rows": len(statuses),
+        **{status: statuses.count(status) for status in sorted(CERTIFIED)},
+    }
+    claimed = {key: int(value.replace(",", "")) for key, value in match.groupdict().items()}
+    return [
+        f"Stale {README} counts sentence: {claimed[key]:,} {key}, expected {value:,}"
+        for key, value in expected.items()
+        if claimed[key] != value
+    ]
+
+
+def unknown_id_errors(texts: dict[str, str], ids: list[str], pattern: str) -> list[str]:
+    """Every ID token (with a registry prefix) names a registry row."""
+    return [
+        f"Unknown registry ID {rid} in {relative}"
+        for relative, text in texts.items()
+        for rid in sorted(set(cited_ids(text, pattern)) - set(ids))
+    ]
+
+
+def moves_table_errors(readme: str, ids: list[str], pattern: str) -> list[str]:
+    """Every registry ID appears exactly once in the last column of the README moves table."""
+    rows = table_rows(readme, "| Move |")
+    if rows is None:
+        return [f"No moves table (| Move | ... | Registry IDs |) in {README}"]
+    seen = [rid for row in rows for rid in set(cited_ids(row[-1], pattern))]
+    return [
+        f"{README} moves table lists {rid} {seen.count(rid)} times, not once"
+        for rid in ids
+        if seen.count(rid) != 1
+    ]
+
+
+def results_bullet_errors(results: str, sections: dict[str, str], pattern: str) -> list[str]:
+    """docs/results.md has one bullet per registry ID, led by that ID alone
+    (`- **Pinsker (KL-1).** ...`), under the `## ` heading of the ID's registry section."""
+    errors, placed, heading = [], {}, ""
+    for line in without_fences(results).splitlines():
+        if heading_level(line) == 2:
+            heading = line[3:].strip()
+        match = BULLET_LEAD.match(line)
+        leads = sorted(set(cited_ids(match["lead"], pattern))) if match else []
+        if len(leads) > 1:
+            errors.append(f"{RESULTS} bullet led by several IDs: {', '.join(leads)}")
+        for rid in leads:
+            placed.setdefault(rid, []).append(heading)
+    for rid, area in sections.items():
+        found = placed.get(rid, [])
+        if len(found) != 1:
+            errors.append(f"{RESULTS} has {len(found)} bullets led by {rid}, not one")
+        elif found[0] != area:
+            errors.append(f"{RESULTS} bullet {rid} is under {found[0]!r}, not {area!r}")
+    return errors
+
+
+def status_word_errors(texts: dict[str, str], statuses: dict[str, str], pattern: str) -> list[str]:
+    """Status words next to IDs agree with the registry: `KL-1, KL-2 Verified`,
+    `PX-3 … PX-6 (Verified)`, `FL-4 is Conditional`, `Conditional on the LSI (PX-2)`."""
+    words = "|".join(sorted(CERTIFIED))
+    ids = rf"{pattern}(?:(?:,\s+|\s+and\s+|\s*…\s*|,\s+and\s+){pattern})*"
+    after = re.compile(rf"({ids})\s*(?:is\s+)?\(?\*?({words})\b")
+    before = re.compile(rf"\b({words})[^|\n]{{0,12}}?\(({ids})")
+    errors = []
+    for relative, text in texts.items():
+        pairs = [(m[1], m[2]) for m in after.finditer(text)]
+        pairs += [(m[2], m[1]) for m in before.finditer(text)]
+        for listed, word in pairs:
+            for rid in sorted(set(cited_ids(listed, pattern))):
+                if rid in statuses and statuses[rid] != word:
+                    errors.append(
+                        f"{relative} calls {rid} {word}; the registry says {statuses[rid]}"
+                    )
+    return errors
+
+
+def literature_map_errors(readme: str, literature: str, pattern: str) -> list[str]:
+    """The README literature map and the `### ` sections of docs/literature.md correspond one to
+    one by URL (the first URL of each section), and each ID in a map row's status cell occurs
+    in the sections of its works."""
+    body = section(readme, "## Literature map")
+    rows = table_rows(body or "", "| Work |")
+    if rows is None:
+        return [f"No literature map table (## Literature map, | Work | ...) in {README}"]
+    errors, sections = [], {}
+    parts = re.split(r"(?m)^(?=#{1,3} )", without_fences(literature))
+    for part in (part.removeprefix("### ") for part in parts if part.startswith("### ")):
+        title = part.splitlines()[0]
+        url = URL.search(part)
+        if not url:
+            errors.append(f"{LITERATURE} section {title!r} has no URL")
+        elif url[0] in sections:
+            errors.append(f"{LITERATURE} sections share the URL {url[0]}")
+        else:
+            sections[url[0]] = set(cited_ids(part, pattern))
+    mapped = []
+    for row in rows:
+        urls = URL.findall(row[0])
+        mapped += urls
+        allowed = set().union(*(sections.get(url, set()) for url in urls))
+        for rid in sorted(set(cited_ids(row[-1], pattern)) - allowed):
+            errors.append(f"{README} literature map row {row[0][:40]!r}: {rid} is not in its works")
+    errors += [
+        f"{README} literature map lists {url} twice"
+        for url in sorted({url for url in mapped if mapped.count(url) > 1})
+    ]
+    errors += [
+        f"{README} literature map lists {url}, which has no section in {LITERATURE}"
+        for url in sorted(set(mapped) - set(sections))
+    ]
+    errors += [
+        f"{LITERATURE} section of {url} has no row in the {README} literature map"
+        for url in sorted(set(sections) - set(mapped))
+    ]
+    return errors
+
+
+def registry_declaration_errors(rows: list[list[str]], declared_in: dict[str, str]) -> list[str]:
+    """Registry rows cite documented public theorems (listed in the declaration index), and
+    their Module column lists, as paths under FormalizeSampling/ without `.lean` (globs such as
+    `Samplers/DiffusionVariance*` allowed), existing files that include the source file of every
+    cited declaration."""
+    errors = []
+    for row in rows:
+        listed: set[str] = set()
+        for entry in re.findall(r"`([^`]+)`", row[5]):
+            found = sorted((ROOT / LIBRARY).glob(f"{entry}.lean"))
+            if not found:
+                errors.append(f"{row[0]}: Module column lists {entry}, which is no library file")
+            listed |= {str(path.relative_to(ROOT)) for path in found}
+        for name in re.findall(rf"`({LIBRARY}\.[\w.'₀-₉]+)`", row[3]):
+            if name not in declared_in:
+                errors.append(f"{row[0]}: {name} is not a documented public theorem")
+            elif declared_in[name] not in listed:
+                module = Path(declared_in[name]).relative_to(LIBRARY).with_suffix("")
+                errors.append(f"{row[0]}: Module column misses {module} (declares {name})")
+    return errors
+
+
+def statuses_section_errors(readme: str) -> list[str]:
+    """The README `## Statuses` section defines exactly STATUSES, as `` - `Name`: ... `` items."""
+    body = section(readme, "## Statuses")
+    if body is None:
+        return [f"No ## Statuses section in {README}"]
+    listed = re.findall(r"(?m)^- `(\w+)`", body)
+    if sorted(listed) != sorted(STATUSES):
+        return [f"{README} Statuses section lists {listed}, not {sorted(STATUSES)}"]
+    return []
+
+
+def slug(heading: str) -> str:
+    """GitHub's anchor for a heading: the rendered text in lower case, keeping letters, digits,
+    `_`, `-` and spaces, with spaces turned into `-`."""
+    text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", heading)
+    text = text.replace("`", "").replace("*", "").replace("$", "").lower()
+    kept = (c for c in text if c in " -_" or unicodedata.category(c)[0] in "LMN")
+    return "".join(kept).replace(" ", "-")
+
+
+def anchors(text: str) -> set[str]:
+    """Anchors of the headings of a Markdown text; repeated slugs get `-1`, `-2`, ..."""
+    found: set[str] = set()
+    for line in without_fences(text).splitlines():
+        level = heading_level(line)
+        if level:
+            base = slug(line[level:].strip().rstrip("#").strip())
+            anchor, n = base, 0
+            while anchor in found:
+                n += 1
+                anchor = f"{base}-{n}"
+            found.add(anchor)
+    return found
+
+
+def link_errors(texts: dict[str, str]) -> list[str]:
+    """Relative links resolve to files of the repository, and their `#anchors` to headings."""
+    errors = []
+    for relative, text in texts.items():
+        for match in LINK.finditer(without_fences(text)):
+            target = match["target"]
+            if re.match(r"[a-z]+:", target):
+                continue
+            path, _, anchor = target.partition("#")
+            file = ((ROOT / relative).parent / path if path else ROOT / relative).resolve()
+            if not file.is_relative_to(ROOT.resolve()) or not file.exists():
+                errors.append(f"Broken link in {relative}: {target}")
+            elif anchor and file.suffix == ".md" and anchor not in anchors(file.read_text()):
+                errors.append(f"Broken anchor in {relative}: {target}")
+    return errors
+
+
+def readme_examples(readme: str) -> list[str]:
+    """The README's ```lean blocks that start with `import`: complete Lean files."""
+    blocks = re.findall(r"(?ms)^```lean\n(.*?)^```", readme)
+    return [block for block in blocks if block.startswith("import ")]
+
+
+def extract_examples(directory: Path) -> int:
+    """Write the README's Lean examples to `directory` as `ReadmeExample<n>.lean`."""
+    examples = readme_examples((ROOT / README).read_text())
+    if not examples:
+        print(f"No ```lean block starting with `import` in {README}", file=sys.stderr)
+        return 1
+    directory.mkdir(parents=True, exist_ok=True)
+    for number, example in enumerate(examples, 1):
+        path = directory / f"ReadmeExample{number}.lean"
+        path.write_text(example)
+        print(path)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-index", action="store_true")
+    parser.add_argument("--extract-examples", metavar="DIR", type=Path)
     args = parser.parse_args()
+    if args.extract_examples:
+        return extract_examples(args.extract_examples)
     errors: list[str] = []
 
     modules = sorted((ROOT / LIBRARY).rglob("*.lean"))
@@ -380,22 +718,20 @@ def main() -> int:
             declarations.append((relative, names[match.start()], line, summary_text))
 
     registry_path = ROOT / REGISTRY
-    rows = registry_rows(registry_path.read_text()) if registry_path.exists() else []
+    registry = registry_path.read_text() if registry_path.exists() else ""
+    rows = registry_rows(registry)
     if not rows:
         errors.append(f"No registry rows found in {REGISTRY}")
     ids = [row[0] for row in rows]
     duplicates = sorted({i for i in ids if ids.count(i) > 1})
     if duplicates:
         errors.append(f"Duplicate registry IDs: {duplicates}")
-    missing = sorted(REQUIRED_IDS - set(ids))
-    if missing:
-        errors.append(f"Registry is missing roadmap IDs: {missing}")
+    errors += contiguity_errors(ids)
+    complete = [row for row in rows if len(row) == COLUMNS]
     for row in rows:
         if len(row) != COLUMNS:
             errors.append(f"Registry row must have {COLUMNS} columns: {row[0]}")
             continue
-        if row[0] not in REQUIRED_IDS and not EXTRA_ID.match(row[0]):
-            errors.append(f"Unknown registry ID: {row[0]}")
         status = row[1]
         if status not in STATUSES:
             errors.append(f"Invalid status {status!r}: {row[0]}")
@@ -405,6 +741,27 @@ def main() -> int:
         if status not in CERTIFIED and names:
             errors.append(f"{status} row must not cite certified declarations: {row[0]}")
         # AxiomAudit.lean resolves every cited name in Lean's environment.
+    errors += registry_declaration_errors(complete, {d[1]: d[0] for d in declarations})
+
+    # The public documentation against the registry, the sources and each other.
+    texts = {name: (ROOT / name).read_text() for name in DOC_FILES if (ROOT / name).exists()}
+    errors += [f"Missing documentation file: {name}" for name in REQUIRED_DOCS if name not in texts]
+    pattern = id_pattern(ids)
+    sources = {str(path.relative_to(ROOT)): path.read_text() for path in modules}
+    errors += unknown_id_errors({**texts, **sources}, ids, pattern)
+    errors += status_word_errors(texts, {row[0]: row[1] for row in complete}, pattern)
+    errors += link_errors(texts)
+    if README in texts:
+        readme = texts[README]
+        lines = sum(len(source.splitlines()) for source in sources.values())
+        statuses = [row[1] if len(row) > 1 else "" for row in rows]
+        errors += counts_errors(readme, statuses, lines, len(declarations))
+        errors += moves_table_errors(readme, ids, pattern)
+        errors += statuses_section_errors(readme)
+        if LITERATURE in texts:
+            errors += literature_map_errors(readme, texts[LITERATURE], pattern)
+    if RESULTS_ONE_BULLET_PER_ID and RESULTS in texts:
+        errors += results_bullet_errors(texts[RESULTS], registry_sections(registry), pattern)
 
     expected_index = write_index(declarations)
     index_path = ROOT / INDEX
@@ -413,8 +770,8 @@ def main() -> int:
     elif not index_path.exists() or index_path.read_text() != expected_index:
         errors.append("Declaration index is stale; run with --write-index")
 
-    texts = [*modules, *ROOT.glob("*.md"), *ROOT.joinpath("docs").rglob("*.md")]
-    for path in texts:
+    scanned = {*modules, *ROOT.glob("*.md"), *ROOT.joinpath("docs").rglob("*.md")}
+    for path in sorted(scanned | {ROOT / name for name in texts}):
         for line, text in enumerate(path.read_text().splitlines(), 1):
             if text.rstrip() != text:
                 errors.append(f"Trailing whitespace: {path.relative_to(ROOT)}:{line}")
