@@ -4,11 +4,13 @@ public import FormalizeSampling.Samplers.ProximalGaussianUnconditional
 public import FormalizeSampling.Samplers.ProximalPerturbedGaussian
 
 /-!
-# Audit (PX-1, PX-3, PX-4): non-vacuity witnesses for the proximal-sampler statements
+# Statement audit: proximal-sampler invariance, Gaussian targets and non-log-concave perturbations
 
-This file applies the headline theorems of registry rows PX-1, PX-3 and PX-4 to concrete,
-non-degenerate instances, discharging every hypothesis, and shows that the resulting bounds are
-not trivially true (the initial KL is finite **and strictly positive**).
+Rows: PX-1, PX-3, PX-4.
+
+This file applies the headline theorems of these registry rows to concrete, non-degenerate
+instances, discharging every hypothesis, and shows that the resulting bounds are not trivially true
+(the initial KL is finite **and strictly positive**).
 
 Instances.
 * **Conditioned laws.** For a probability law `μ` and a measurable `s` with `μ s ≠ 0` and

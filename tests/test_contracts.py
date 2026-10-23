@@ -57,6 +57,24 @@ def leaf(doc: str, imports: str = "public import Mathlib.Logic.Basic\n") -> str:
 # Registry IDs of the fixtures, with their registry sections.
 FIXTURE_IDS = ("KL-1", "KL-2", "KL-3", "CE-01")
 SECTIONS = {"KL": "Foundations", "CE": "Counterexamples"}
+WITNESS = "Audit/Witness.lean"
+
+
+def audit_module(ids: tuple[str, ...], title: str = "fixture witnesses") -> str:
+    """A witness module whose docstring header lists `ids` on its `Rows:` line."""
+    return (
+        f"module\n\npublic import Mathlib.Logic.Basic\n\n/-!\n# Statement audit: {title}\n\n"
+        f"Rows: {', '.join(ids)}.\n\nWitnesses.\n-/\n\npublic section\n"
+    )
+
+
+def generated_blocks(*names: str) -> list[str]:
+    """Empty generated blocks (their markers), filled by `--write`."""
+    return [
+        line
+        for name in names
+        for line in (f"<!-- BEGIN GENERATED: {name} -->", f"<!-- END GENERATED: {name} -->", "")
+    ]
 
 
 def registry(rows: dict[str, tuple[str, ...]], ids: tuple[str, ...] = FIXTURE_IDS) -> str:
@@ -100,6 +118,7 @@ def fixture_docs(
         "",
         "Results by area: [`docs/results.md`](docs/results.md#foundations).",
         "",
+        *generated_blocks("coverage", "layout"),
         "## Literature map",
         "",
         "| Work | Algorithm | What is formalised here | Status |",
@@ -149,59 +168,80 @@ def aggregator(imports: str, doc: str | None = None) -> str:
     return "module\n\n" + imports + (f"\n/-! {doc} -/\n" if doc else "")
 
 
+@contextlib.contextmanager
+def synthetic_repo(
+    module: str,
+    rows: dict[str, tuple[str, ...]],
+    extra: dict[str, str | None] | None = None,
+    core: bool = True,
+    public_root: bool = True,
+    docs: dict[str, str | None] | None = None,
+    ids: tuple[str, ...] = FIXTURE_IDS,
+):
+    """A temporary repository: the library files (`module` as Foundations/Example.lean, a
+    witness module listing `ids`, plus `extra`, where `None` omits a file), the root and core
+    modules, the registry of `ids` and `rows`, and the fixture documents updated by `docs`."""
+    files = {"Foundations/Example.lean": module, WITNESS: audit_module(ids), **(extra or {})}
+    files = {relative: text for relative, text in files.items() if text is not None}
+    if core and "Core.lean" not in files:
+        levels = {relative: check_contracts.layer(module_name(relative)) for relative in files}
+        lower = [
+            relative
+            for relative, level in levels.items()
+            if level is not None and level <= check_contracts.CORE_LAYER
+        ]
+        files["Core.lean"] = aggregator("".join(map(import_line, lower)), "The core.")
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "docs").mkdir()
+        for relative, text in files.items():
+            path = root / "FormalizeSampling" / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+        root_imports = "".join(map(import_line, files))
+        if not public_root:
+            root_imports = root_imports.replace("public import", "import")
+        (root / "FormalizeSampling.lean").write_text(aggregator(root_imports))
+        (root / "docs/theorem_registry.md").write_text(registry(rows, ids))
+        for relative, text in {**fixture_docs(rows, ids), **(docs or {})}.items():
+            if text is not None:
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+                (root / relative).write_text(text)
+        yield root
+
+
+def invoke(root: Path, *args: str) -> tuple[int, str]:
+    """Run the checker on the repository `root` with command-line `args`."""
+    out, err = io.StringIO(), io.StringIO()
+    with (
+        patch.object(check_contracts, "ROOT", root),
+        patch("sys.argv", ["check_contracts.py", *args]),
+        contextlib.redirect_stdout(out),
+        contextlib.redirect_stderr(err),
+    ):
+        code = check_contracts.main()
+    return code, out.getvalue() + err.getvalue()
+
+
 class ContractTests(unittest.TestCase):
     def run_checker(
         self,
         module: str,
         rows: dict[str, tuple[str, ...]],
         write_index: bool,
-        extra: dict[str, str] | None = None,
+        extra: dict[str, str | None] | None = None,
         core: bool = True,
         public_root: bool = True,
         docs: dict[str, str | None] | None = None,
         ids: tuple[str, ...] = FIXTURE_IDS,
         args: tuple[str, ...] = (),
     ) -> tuple[int, str]:
-        """Run the checker on a synthetic repository: the library files (`module` as
-        Foundations/Example.lean, plus `extra`), the root and core modules, the registry of
-        `ids` and `rows`, and the fixture documents updated by `docs` (`None` omits a file)."""
-        files = {"Foundations/Example.lean": module, **(extra or {})}
-        if core and "Core.lean" not in files:
-            levels = {relative: check_contracts.layer(module_name(relative)) for relative in files}
-            lower = [
-                relative
-                for relative, level in levels.items()
-                if level is not None and level <= check_contracts.CORE_LAYER
-            ]
-            files["Core.lean"] = aggregator("".join(map(import_line, lower)), "The core.")
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / "docs").mkdir()
-            for relative, text in files.items():
-                path = root / "FormalizeSampling" / relative
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(text)
-            root_imports = "".join(map(import_line, files))
-            if not public_root:
-                root_imports = root_imports.replace("public import", "import")
-            (root / "FormalizeSampling.lean").write_text(aggregator(root_imports))
-            (root / "docs/theorem_registry.md").write_text(registry(rows, ids))
-            for relative, text in {**fixture_docs(rows, ids), **(docs or {})}.items():
-                if text is not None:
-                    (root / relative).parent.mkdir(parents=True, exist_ok=True)
-                    (root / relative).write_text(text)
-            argv = ["check_contracts.py", *args] + (["--write-index"] if write_index else [])
-            out, err = io.StringIO(), io.StringIO()
-            with (
-                patch.object(check_contracts, "ROOT", root),
-                patch("sys.argv", argv),
-                contextlib.redirect_stdout(out),
-                contextlib.redirect_stderr(err),
-            ):
-                code = check_contracts.main()
+        """Run the checker once on a `synthetic_repo` (with `--write-index` if asked); the output
+        is followed by the declaration index."""
+        with synthetic_repo(module, rows, extra, core, public_root, docs, ids) as root:
+            code, output = invoke(root, *args, *(["--write-index"] if write_index else []))
             index = root / "docs/declaration_index.md"
-            text = index.read_text() if index.exists() else ""
-            return code, out.getvalue() + err.getvalue() + text
+            return code, output + (index.read_text() if index.exists() else "")
 
     def test_clean_module_passes_and_indexes_public_theorems(self):
         rows = {"KL-1": ("Verified", "`FormalizeSampling.first`")}
@@ -366,7 +406,8 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn(
             "Export mismatch (public imports of FormalizeSampling.lean): "
-            "missing=['FormalizeSampling.Core', 'FormalizeSampling.Foundations.Example']",
+            "missing=['FormalizeSampling.Audit.Witness', 'FormalizeSampling.Core', "
+            "'FormalizeSampling.Foundations.Example']",
             output,
         )
 
@@ -689,6 +730,169 @@ class ContractTests(unittest.TestCase):
         )
         self.assertEqual(code, 1)
         self.assertIn("No ```lean block starting with `import` in README.md", output)
+
+    # Generated documentation: the README coverage and Layout blocks and the witness table.
+
+    def test_id_ranges(self):
+        ranges = check_contracts.id_ranges
+        self.assertEqual(ranges([f"DF-{n}" for n in range(1, 11)]), "DF-1 … DF-10")
+        self.assertEqual(ranges(["GI-1", "GI-2"]), "GI-1, GI-2")
+        self.assertEqual(ranges(["DF-4", "DF-5", "DF-6", "DF-8"]), "DF-4 … DF-6, DF-8")
+        self.assertEqual(
+            ranges(["FL-1", "FL-2", "FL-3", "DT-1", "CE-01", "CE-02", "CE-03"]),
+            "FL-1 … FL-3, DT-1, CE-01 … CE-03",
+        )
+        self.assertEqual(ranges([]), "")
+
+    def test_registry_rows_sit_in_sections(self):
+        areas, errors = check_contracts.registry_areas(registry({}))
+        self.assertEqual(
+            areas, [("Foundations", ["KL-1", "KL-2", "KL-3"]), ("Counterexamples", ["CE-01"])]
+        )
+        self.assertEqual(errors, [])
+        broken = "| KL-1 | Open | s | — | s | m |\n## A\n\n## B\n| CE-01 | Open |\n## B\n"
+        _, errors = check_contracts.registry_areas(broken)
+        self.assertEqual(
+            errors,
+            [
+                "Registry row KL-1 is not under a `## ` section",
+                "Registry section 'B' appears twice",
+                "Registry section 'A' has no rows",
+                "Registry section 'B' has no rows",
+            ],
+        )
+
+    def test_readme_blocks_are_generated_and_round_trip(self):
+        rows = {
+            "KL-1": ("Verified", "`FormalizeSampling.first`"),
+            "CE-01": ("Counterexample", "`FormalizeSampling.second`"),
+        }
+        with synthetic_repo(MODULE, rows) as root:
+            readme = root / "README.md"
+            code, output = invoke(root)
+            self.assertEqual(code, 1)
+            for what in (
+                "docs/declaration_index.md",
+                "the coverage block of README.md",
+                "the layout block of README.md",
+            ):
+                self.assertIn(f"Stale generated documentation: {what}; run with --write", output)
+            code, output = invoke(root, "--write")
+            self.assertEqual(code, 0, output)
+            written = readme.read_text()
+            self.assertIn(
+                "<!-- BEGIN GENERATED: coverage -->\n\n"
+                "| Area | Registry rows | Status |\n|---|---|---|\n"
+                "| Foundations | KL-1 … KL-3 | 1 Verified, 2 Open |\n"
+                "| Counterexamples | CE-01 | 1 Counterexample |\n\n"
+                "<!-- END GENERATED: coverage -->",
+                written,
+            )
+            self.assertIn("| `FormalizeSampling/Kernels/` | TV error propagation", written)
+            self.assertIn(
+                "in the order\n`Foundations` < `Identities`, `Kernels` < `Flow`, "
+                "`ScoreEstimation` < `Samplers` < `Examples`,\n`Counterexamples` < `Audit`",
+                written,
+            )
+            self.assertTrue(
+                all(
+                    len(line) <= 100
+                    for line in written.split("<!-- BEGIN GENERATED: layout")[1].splitlines()
+                    if not line.startswith("|")
+                )
+            )
+            index = (root / "docs/declaration_index.md").read_text()
+            code, output = invoke(root, "--write")  # idempotent
+            self.assertEqual(code, 0, output)
+            self.assertEqual(readme.read_text(), written)
+            self.assertEqual((root / "docs/declaration_index.md").read_text(), index)
+            code, output = invoke(root)
+            self.assertEqual(code, 0, output)
+            readme.write_text(written.replace("1 Verified, 2 Open", "3 Verified"))
+            code, output = invoke(root)
+            self.assertEqual(code, 1)
+            self.assertIn("Stale generated documentation: the coverage block of README.md", output)
+            self.assertNotIn("layout block", output)
+            readme.write_text(written.replace("<!-- END GENERATED: layout -->", ""))
+            code, output = invoke(root, "--write")
+            self.assertEqual(code, 1)
+            self.assertIn("No generated layout block (<!-- BEGIN GENERATED: layout --> ...", output)
+
+    def test_layout_comes_from_groups_and_layers(self):
+        block = check_contracts.layout_block()
+        for group, text in check_contracts.GROUPS.items():
+            self.assertIn(f"| `FormalizeSampling/{group}/` | {text.removesuffix('.')} |", block)
+        self.assertIn("(`Foundations`, `Identities`, `Kernels`, `Flow`, `ScoreEstimation`)", block)
+        self.assertIn("(the\nthree lowest layers)", block)
+        groups = {**check_contracts.GROUPS, "Extra": "A directory without a layer."}
+        with patch.object(check_contracts, "GROUPS", groups):
+            code, output = self.run_checker(MODULE, {}, write_index=True)
+        self.assertEqual(code, 1)
+        self.assertIn("GROUPS and LAYERS list different directories: ['Extra']", output)
+
+    def test_wrap_keeps_code_spans_whole(self):
+        words = "word " * 17
+        self.assertEqual(
+            check_contracts.wrap(words + "`a code span` end"), words + "`a code span`\nend"
+        )
+        self.assertEqual(
+            check_contracts.wrap("word " + words + "`a code span` end"),
+            "word " + words.rstrip() + "\n`a code span` end",
+        )
+        self.assertEqual(check_contracts.wrap("`" + "x " * 60 + "`", 20).count("\n"), 0)
+
+    def test_witness_table_heads_the_audit_section(self):
+        extra = {
+            "Audit/Counter.lean": audit_module(("CE-01",), "a counterexample | instance"),
+            WITNESS: audit_module(("KL-3", "KL-1", "KL-2")),
+        }
+        code, output = self.run_checker(MODULE, {}, write_index=True, extra=extra)
+        self.assertEqual(code, 0, output)
+        self.assertIn(
+            "## Audit\n\nStatement audit: Lean witnesses on non-degenerate instances for every "
+            "registry row.\n\nWitness modules,",
+            output,
+        )
+        self.assertIn(
+            "| Module | Rows | Summary |\n| --- | --- | --- |\n"
+            "| [Witness](../FormalizeSampling/Audit/Witness.lean) | KL-1 … KL-3 | "
+            "fixture witnesses |\n"
+            "| [Counter](../FormalizeSampling/Audit/Counter.lean) | CE-01 | "
+            "a counterexample \\| instance |\n",
+            output,
+        )
+
+    def test_witness_rows_cover_the_registry(self):
+        extra = {
+            WITNESS: audit_module(("KL-1", "KL-2", "KL-2", "KL-9", "KL")),
+            "Audit/Untitled.lean": leaf("Witnesses without the fixed header."),
+        }
+        code, output = self.run_checker(MODULE, {}, write_index=True, extra=extra)
+        self.assertEqual(code, 1)
+        self.assertIn("FormalizeSampling/Audit/Witness.lean: Rows line lists KL-2 twice", output)
+        self.assertIn("Rows line lists 'KL-9', which is no registry row", output)
+        self.assertIn("Rows line lists 'KL', which is no registry row", output)
+        self.assertIn("Registry row KL-3 is in no witness module's Rows line", output)
+        self.assertIn("Registry row CE-01 is in no witness module's Rows line", output)
+        self.assertIn(
+            "Witness module docstring without the title `# Statement audit: <summary>` and one "
+            "`Rows: <IDs>.` line: FormalizeSampling/Audit/Untitled.lean",
+            output,
+        )
+
+    def test_stale_witness_table_is_rejected(self):
+        with synthetic_repo(MODULE, {}) as root:
+            self.assertEqual(invoke(root, "--write")[0], 0)
+            witness = root / "FormalizeSampling" / WITNESS
+            witness.write_text(audit_module(FIXTURE_IDS, "renamed witnesses"))
+            code, output = invoke(root)
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                output.strip(),
+                "Stale generated documentation: docs/declaration_index.md; run with --write",
+            )
+            self.assertEqual(invoke(root, "--write-index")[0], 0)  # the old flag is an alias
+            self.assertIn("| renamed witnesses |", (root / "docs/declaration_index.md").read_text())
 
 
 if __name__ == "__main__":

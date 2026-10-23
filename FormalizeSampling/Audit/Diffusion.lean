@@ -5,6 +5,8 @@ public import FormalizeSampling.Samplers.DiffusionMain
 /-!
 # Statement audit: the DDPM geometric-grid bound for singular, non-Gaussian data
 
+Rows: DF-1.
+
 Non-vacuity witness for `DiffusionDiscretization.klDiv_output_le_geomGrid` and
 `DiffusionDiscretization.tvSup_output_le_geomGrid`. The data law is a Dirac mass `δ_c` or a
 two-point mixture `(δ_a + δ_b) / 2` on `Fin (d + 1) → ℝ`: non-Gaussian and with no Lebesgue

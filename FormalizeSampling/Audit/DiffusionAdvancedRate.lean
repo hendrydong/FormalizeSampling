@@ -6,13 +6,15 @@ public import FormalizeSampling.Samplers.DiffusionRate
 public import FormalizeSampling.Samplers.DiffusionGaussianOutputExt
 
 /-!
-# Statement audit: variance, path-KL, rate and Gaussian-output witnesses (DF-4, DF-5, DF-6, DF-8)
+# Statement audit: reverse-noise variance, path KL, rate sharpness and Gaussian output
 
-Non-vacuity witnesses for the diffusion rows DF-4, DF-5, DF-6 and DF-8. Data laws on
-`Fin 1 → ℝ`: the two-point law `(δ_{-1} + δ_1)/2` (`pm`, second moment `1 = d`, no density),
-the point mass `δ_0`, and the Gaussians `N(0, 1)` and `N(0, 1/2)`. Grids: the uniform grid
-`t_k = k` (`unifGrid`), `t_k = k/4` (`quarterGrid`) and the geometric grid `u_1 = 1`,
-`r = e²`. Every hypothesis of the headline theorems is discharged in Lean.
+Rows: DF-4, DF-5, DF-6, DF-8.
+
+Non-vacuity witnesses for these diffusion rows. Data laws on `Fin 1 → ℝ`: the two-point law
+`(δ_{-1} + δ_1)/2` (`pm`, second moment `1 = d`, no density), the point mass `δ_0`, and the
+Gaussians `N(0, 1)` and `N(0, 1/2)`. Grids: the uniform grid `t_k = k` (`unifGrid`),
+`t_k = k/4` (`quarterGrid`) and the geometric grid `u_1 = 1`, `r = e²`. Every hypothesis of
+the headline theorems is discharged in Lean.
 
 * **DF-4** (`DiffusionDiscretization.sum_lintegral_klDiv_revKernel_ddpm_ge`,
   `klDiv_output_le_betaVar_explicit`): on `t_k = k` with data `pm`, the per-step KL sum of the

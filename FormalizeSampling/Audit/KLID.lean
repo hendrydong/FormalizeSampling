@@ -27,13 +27,15 @@ public import FormalizeSampling.Identities.ScoreFlowWeak
 public import FormalizeSampling.Flow.ReverseTime
 
 /-!
-# Statement audit, group KLID (rows KL-1 … KL-6, ID-1 … ID-4)
+# Statement audit: KL tools, log-Sobolev inequalities, Stein, generator and reverse-time identities
 
-Non-vacuity witnesses for `docs/theorem_registry.md`, rows KL-1 to KL-6 and ID-1 to ID-4. Each
-theorem below applies an audited theorem to a concrete instance (Gaussians, constant kernels,
-explicit densities, bump test functions), discharging every hypothesis; where cheap it also
-shows that the conclusion is not a junk value (finite nonzero KL, positive Fisher information,
-sharp time-zero LSI, non-constant test functions, non-Gaussian potentials).
+Rows: KL-1, KL-2, KL-3, KL-4, KL-5, KL-6, ID-1, ID-2, ID-3, ID-4.
+
+Non-vacuity witnesses for these rows of `docs/theorem_registry.md`. Each theorem below applies an
+audited theorem to a concrete instance (Gaussians, constant kernels, explicit densities, bump test
+functions), discharging every hypothesis; where cheap it also shows that the conclusion is not a
+junk value (finite nonzero KL, positive Fisher information, sharp time-zero LSI, non-constant test
+functions, non-Gaussian potentials).
 
 Highlights:
 * `pinsker_gauss`: KL-1 with `KL ≠ ∞` discharged by KL-3, giving `tvSup ≤ 1/2`.

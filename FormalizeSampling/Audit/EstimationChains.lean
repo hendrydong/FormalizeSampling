@@ -14,12 +14,13 @@ public import FormalizeSampling.Samplers.MALA
 public import FormalizeSampling.Samplers.RandomScoreOracleInner
 
 /-!
-# Statement audit `EstimationChains`: non-vacuity witnesses
+# Statement audit: score estimation, kernel error propagation, Gaussian-increment chains and MH
 
-Registry rows SE-1, SE-2, SE-3, SE-4, KR-1, KR-2, GI-1, GI-2, MH-1 of
-`docs/theorem_registry.md`. Each theorem below **applies** a headline theorem of the row to a
-concrete, non-degenerate instance and discharges every hypothesis; where cheap, it also shows
-the conclusion is non-trivial. A summary is in `docs/statement_audit.md`.
+Rows: SE-1, SE-2, SE-3, SE-4, KR-1, KR-2, GI-1, GI-2, MH-1.
+
+Non-vacuity witnesses for these rows of `docs/theorem_registry.md`. Each theorem below
+**applies** a headline theorem of the row to a concrete, non-degenerate instance and
+discharges every hypothesis; where cheap, it also shows the conclusion is non-trivial.
 
 * SE-1: `se1_isMinOn_iff` (`p = exp(-x₀²)`, `H = 1`, non-equilibrium `sStar = ∇log p + G`,
   `v⋆ = G ≠ 0`).

@@ -3,7 +3,9 @@ module
 public import FormalizeSampling.Flow.FokkerPlanckUniquenessLipschitz
 
 /-!
-# Statement audit: Fokker–Planck well-posedness for globally Lipschitz drift (FL-6)
+# Statement audit: Fokker–Planck well-posedness for globally Lipschitz drift
+
+Rows: FL-6.
 
 Non-vacuity witnesses for `FokkerPlanckUniqueness.existsUnique_weakFokkerPlanck_lipschitz` and
 `FokkerPlanckUniqueness.existsUnique_weakFokkerPlanck_lipschitz_continuousTime`. Every

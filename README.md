@@ -349,6 +349,8 @@ Details: [`docs/statement_audit.md`](docs/statement_audit.md).
 
 ## Coverage at a glance
 
+<!-- BEGIN GENERATED: coverage -->
+
 | Area | Registry rows | Status |
 |---|---|---|
 | Diffusion models (DDPM/DDIM, memorisation, variance, path vs output) | DF-1 … DF-10 | 10 Verified |
@@ -356,38 +358,40 @@ Details: [`docs/statement_audit.md`](docs/statement_audit.md).
 | KL toolkit and log-Sobolev inequalities | KL-1 … KL-6 | 6 Verified |
 | Flows, Fokker–Planck, continuity equation | FL-1 … FL-6, DT-1 | 5 Verified, 2 Conditional |
 | Gaussian-increment chains (ULA / Euler–Maruyama) | GI-1, GI-2 | 2 Verified |
-| Identities, score estimation, kernels, MH, particles | ID, SE, KR, MH, PT | 12 Verified |
+| Identities, score estimation, kernels, MH, particles | ID-1 … ID-4, SE-1 … SE-4, KR-1, KR-2, MH-1, PT-1 | 12 Verified |
 | Exact examples (tightness) | EX-1 … EX-3 | 3 Verified |
 | Counterexamples | CE-01 … CE-08 | 8 Counterexample |
+
+<!-- END GENERATED: coverage -->
 
 Open directions are listed at the end of [`docs/results.md`](docs/results.md).
 
 ## Layout
 
+<!-- BEGIN GENERATED: layout -->
+
 | Directory | Contents |
 |---|---|
-| `FormalizeSampling.lean`, `FormalizeSampling/Core.lean` | entry points: the first imports the whole library, the second the sampler-independent core (`Foundations`, `Identities`, `Kernels`, `Flow`, `ScoreEstimation`) |
-| `FormalizeSampling/Foundations/` | vector calculus and scores, TV, KL tools, Gaussian KL formulas, Gibbs measures, heat kernels, de Bruijn identity and Gaussian log-Sobolev inequality along the heat flow, log-Sobolev inequalities, Bakry–Émery, Prékopa–Leindler, weak derivatives, the bridge to Mathlib's `EuclideanSpace ℝ (Fin d)` |
-| `FormalizeSampling/Identities/` | Stein, Tweedie, weak generator |
-| `FormalizeSampling/Flow/` | continuity and Fokker–Planck equations (existence, uniqueness), reverse-time rewriting, KL dissipation and decay, OU flows, deterministic steps |
+| `FormalizeSampling.lean`, `FormalizeSampling/Core.lean` | Entry points: the first imports the whole library, the second the sampler-independent core (`Foundations`, `Identities`, `Kernels`, `Flow`, `ScoreEstimation`) |
+| `FormalizeSampling/Foundations/` | Vector calculus and scores, total variation, KL tools, Gaussian KL formulas, Gibbs measures, heat kernels, de Bruijn identity and Gaussian log-Sobolev inequality along the heat flow, log-Sobolev inequalities, Bakry–Émery, Prékopa–Leindler, weak derivatives, the bridge to Mathlib's `EuclideanSpace ℝ (Fin d)` |
+| `FormalizeSampling/Identities/` | Gaussian and density Stein identities, Tweedie's formula and posterior scores, weak generators, score propagation, first variation of KL under transport |
+| `FormalizeSampling/Kernels/` | TV error propagation (per-step errors in TV or KL) and decomposition for inexact kernels, reverse (Bayes) kernels, Gaussian and OU kernels, finite products of kernels |
+| `FormalizeSampling/Flow/` | Continuity and Fokker–Planck equations (existence, uniqueness), reverse-time rewriting, KL dissipation and decay, OU flows, deterministic steps |
 | `FormalizeSampling/ScoreEstimation/` | Stein/Hyvärinen objective, feature classes, Monte Carlo posterior means |
-| `FormalizeSampling/Kernels/` | TV error propagation (per-step errors in TV or KL) and decomposition for inexact kernels, reverse kernels, Gaussian and OU kernels |
-| `FormalizeSampling/Samplers/` | Gaussian-increment chains, MH/MALA, proximal sampler (heat-flow and backward analysis; also on `EuclideanSpace ℝ (Fin d)`), diffusion models (DDPM/DDIM), particles |
-| `FormalizeSampling/Examples/` | closed-form Gaussian instances and tightness examples |
-| `FormalizeSampling/Counterexamples/` | refutations of tempting general claims |
-| `FormalizeSampling/Audit/` | statement audit: Lean witnesses on non-degenerate instances for every registry row |
-| `scripts/` | axiom audit (`AxiomAudit.lean`) and contract checker (`check_contracts.py`) |
-| `experiments/`, `tests/` | exact-arithmetic and numerical illustrations (never proofs) and their tests |
-| `showcase/` | numpy/matplotlib experiments with figures for the headline results ([`showcase/README.md`](showcase/README.md)); illustrations, not proofs, not run in CI; most assert numerically the Lean inequality they illustrate |
-| `docs/` | blueprint, theorem registry, declaration index, glossary, statement audit |
+| `FormalizeSampling/Samplers/` | Gaussian-increment chains and random score oracles, MH/MALA, proximal sampler (heat-flow and backward analysis; also on `EuclideanSpace ℝ (Fin d)`), diffusion models (DDPM/DDIM), particles |
+| `FormalizeSampling/Examples/` | Closed-form Gaussian instances and tightness examples |
+| `FormalizeSampling/Counterexamples/` | Refutations of tempting general claims |
+| `FormalizeSampling/Audit/` | Statement audit: Lean witnesses on non-degenerate instances for every registry row |
 
-The directories are layered: a module imports only modules of its own or a lower layer, in the
-order `Foundations` < `Identities`, `Kernels` < `Flow`, `ScoreEstimation` < `Samplers` <
-`Examples`, `Counterexamples` < `Audit` (checked by `scripts/check_contracts.py`).
-`FormalizeSampling/Core.lean` imports every module of `Foundations`, `Identities`, `Kernels`,
-`Flow` and `ScoreEstimation` (the three lowest layers), the sampler-independent core;
-`FormalizeSampling.lean` imports everything. Every file is a Lean module, so both modules
-(`public import FormalizeSampling.Core`) and ordinary Lean files can import the library.
+The directories are layered: a module imports only modules of its own or a lower layer, in the order
+`Foundations` < `Identities`, `Kernels` < `Flow`, `ScoreEstimation` < `Samplers` < `Examples`,
+`Counterexamples` < `Audit` (checked by `scripts/check_contracts.py`). `FormalizeSampling/Core.lean`
+imports every module of `Foundations`, `Identities`, `Kernels`, `Flow` and `ScoreEstimation` (the
+three lowest layers), the sampler-independent core; `FormalizeSampling.lean` imports everything.
+Every file is a Lean module, so both modules (`public import FormalizeSampling.Core`) and ordinary
+Lean files can import the library.
+
+<!-- END GENERATED: layout -->
 
 Files whose names end in `Pi` work on `Fin d → ℝ`. Most have a one-dimensional counterpart
 without the suffix (for example `Samplers/Proximal.lean` for `Samplers/ProximalPi.lean`), which
@@ -399,6 +403,15 @@ without it, such as the flow and diffusion developments, are also stated on `Fin
 and Laplacians correspond), and `Samplers/EuclideanTransfer.lean` restates Bakry–Émery, the
 invariance of the target under the proximal sampler (PX-1) and the strongly log-concave
 proximal-sampler rate (PX-6) there.
+
+The rest of the repository:
+
+| Directory | Contents |
+|---|---|
+| `scripts/` | Axiom audit (`AxiomAudit.lean`) and contract checker (`check_contracts.py`) |
+| `experiments/`, `tests/` | Exact-arithmetic and numerical illustrations (never proofs) and their tests |
+| `showcase/` | Experiments in numpy and matplotlib with figures for the headline results ([`showcase/README.md`](showcase/README.md)); illustrations, not proofs, not run in CI; most assert numerically the Lean inequality they illustrate |
+| `docs/` | Results by area, literature, blueprint, theorem registry, declaration index, glossary, statement audit |
 
 ## Building and checking
 

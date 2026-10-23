@@ -8,7 +8,9 @@ public import FormalizeSampling.Flow.DiPernaLionsLinearGrowth
 public import FormalizeSampling.Flow.ContinuityUniquenessLocal
 
 /-!
-# Statement audit, registry row FL-5 (group `FlowPDE`)
+# Statement audit: noise–score equivalence, weak Fokker–Planck and continuity equations
+
+Rows: FL-5.
 
 Non-vacuity witnesses for the headline statements of FL-5 (noise–score equivalence,
 continuity-equation uniqueness, weak Fokker–Planck existence / uniqueness, DiPerna–Lions).

@@ -22,13 +22,14 @@ public import FormalizeSampling.Samplers.GaussianIncrementPi
 public import FormalizeSampling.Foundations.MeasureHelpers
 
 /-!
-# Statement audit, group `StepsExamples` (non-vacuity witnesses)
+# Statement audit: particles, deterministic steps, exact examples and counterexamples
 
-Registry rows PT-1, DT-1, EX-1, EX-2, EX-3, CE-01 ... CE-08 of `docs/theorem_registry.md`.
-Each theorem below *applies* an audited headline theorem to a concrete, non-degenerate
-instance, discharging every hypothesis; where useful it also shows that the conclusion is not
-trivial (finite and nonzero KL, strictly negative dissipation rate, nonzero Fisher term). A
-summary is in `docs/statement_audit.md`.
+Rows: PT-1, DT-1, EX-1, EX-2, EX-3, CE-01, CE-02, CE-03, CE-04, CE-05, CE-06, CE-07, CE-08.
+
+Non-vacuity witnesses for these rows of `docs/theorem_registry.md`. Each theorem below
+*applies* an audited headline theorem to a concrete, non-degenerate instance, discharging
+every hypothesis; where useful it also shows that the conclusion is not trivial (finite and
+nonzero KL, strictly negative dissipation rate, nonzero Fisher term).
 
 ## Main witnesses
 

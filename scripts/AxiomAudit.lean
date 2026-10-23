@@ -19,7 +19,9 @@ The public Markdown files (`docFiles`) are checked against the environment too:
 * no such declaration may be deprecated;
 * every registry row that cites declarations must cite one that the statement audit uses: one in
   the transitive closure, through the library's own declarations, of the constants used in the
-  types and proofs of the declarations of the `FormalizeSampling.Audit` modules.
+  types and proofs of the declarations of the `FormalizeSampling.Audit` modules;
+* every row listed on the `Rows:` line of an audit module's docstring must cite a declaration in
+  the closure of that module's own declarations.
 -/
 
 open Lean Elab Command
@@ -80,6 +82,14 @@ def isRowId (id : String) : Bool :=
   match id.splitOn "-" with
   | [p, n] => p.length == 2 && p.all Char.isUpper && !n.isEmpty && n.all Char.isDigit
   | _ => false
+
+/-- The IDs on the `Rows: KL-1, KL-2.` line of an audit module's source (empty if none). -/
+def rowsLine (source : String) : Array String := Id.run do
+  for line in source.splitOn "\n" do
+    if line.startsWith "Rows: " then
+      let ids := ((line.replace "Rows: " "").replace "." "").replace " " ""
+      return (ids.splitOn ",").toArray
+  return #[]
 
 /-- Constants used in the type and the value (proof or body) of a declaration. -/
 def usedConstants (ci : ConstantInfo) : Array Name :=
@@ -151,34 +161,61 @@ run_cmd do
       {"\n".intercalate deprecated.toList}"
   logInfo m!"Resolved {spans} dotted names in the documentation; none is deprecated"
   -- Witness reachability: the closure, through project declarations, of the constants used by
-  -- the declarations of the audit modules.
-  let mut reached : NameSet := {}
-  let mut stack : Array Name := #[]
+  -- the declarations of the audit modules, as a whole and module by module.
+  let mut auditDecls : Std.HashMap Name (Array Name) := {}
   for name in project do
-    if underModule `FormalizeSampling.Audit name then
-      reached := reached.insert name
-      stack := stack.push name
+    if let some idx := env.getModuleIdxFor? name then
+      let m := moduleNames[idx.toNat]!
+      if (`FormalizeSampling.Audit).isPrefixOf m then
+        auditDecls := auditDecls.insert m ((auditDecls.getD m #[]).push name)
+  let mut edges : Std.HashMap Name (Array Name) := {}
+  let mut stack : Array Name := auditDecls.fold (fun acc _ decls => acc ++ decls) #[]
   while !stack.isEmpty do
     let name := stack.back!
     stack := stack.pop
-    let some ci := env.find? name | continue
-    for used in usedConstants ci do
-      if !reached.contains used && underModule `FormalizeSampling used then
-        reached := reached.insert used
-        stack := stack.push used
-  let mut rows : Nat := 0
-  let mut unwitnessed : Array String := #[]
+    if edges.contains name then continue
+    let used := match env.find? name with
+      | some ci => (usedConstants ci).filter (underModule `FormalizeSampling ·)
+      | none => #[]
+    edges := edges.insert name used
+    stack := stack ++ used.filter (!edges.contains ·)
+  let closure (roots : Array Name) : NameSet := Id.run do
+    let mut seen : NameSet := {}
+    let mut todo := roots
+    while !todo.isEmpty do
+      let name := todo.back!
+      todo := todo.pop
+      unless seen.contains name do
+        seen := seen.insert name
+        todo := todo ++ edges.getD name #[]
+    return seen
+  let mut cited : Std.HashMap String (Array Name) := {}
   for line in registry.splitOn "\n" do
     let cells := line.splitOn "|"
     let id := (cells.getD 1 "").replace " " ""
     if line.startsWith "| " && cells.length > 4 && isRowId id then
-      let cited := (lineSpans cells[4]!).filter (·.startsWith "FormalizeSampling.")
-      unless cited.isEmpty do
-        rows := rows + 1
-        unless cited.any (reached.contains ·.toName) do
-          unwitnessed := unwitnessed.push id
+      let names := (lineSpans cells[4]!).filter (·.startsWith "FormalizeSampling.")
+      unless names.isEmpty do
+        cited := cited.insert id (names.map (·.toName))
+  let reached := closure (auditDecls.fold (fun acc _ decls => acc ++ decls) #[])
+  let unwitnessed := cited.toArray.filterMap fun (id, names) =>
+    if names.any reached.contains then none else some id
   unless unwitnessed.isEmpty do
     throwError "Registry rows whose cited declarations the statement audit never uses: \
-      {unwitnessed}"
-  logInfo m!"Every registry row with Lean declarations ({rows}) cites one used by the \
-    statement audit ({reached.size} declarations reached from the audit modules)"
+      {unwitnessed.qsort (· < ·)}"
+  let mut unused : Array String := #[]
+  let mut listed : Nat := 0
+  for (m, decls) in auditDecls.toList do
+    let source ← liftIO <| IO.FS.readFile s!"{m.toString.replace "." "/"}.lean"
+    let seen := closure decls
+    for id in rowsLine source do
+      let names := cited.getD id #[]
+      listed := listed + 1
+      unless names.isEmpty || names.any seen.contains do
+        unused := unused.push s!"{m}: {id}"
+  unless unused.isEmpty do
+    throwError "Rows: lines of audit modules list rows none of whose cited declarations the \
+      module uses:\n{"\n".intercalate unused.toList}"
+  logInfo m!"Every registry row with Lean declarations ({cited.size}) cites one used by the \
+    statement audit ({reached.size} declarations reached from the audit modules), and each of \
+    the {listed} rows listed by the {auditDecls.size} audit modules cites one used by its module"

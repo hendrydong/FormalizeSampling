@@ -7,11 +7,13 @@ public import FormalizeSampling.Samplers.DiffusionODEMidpoint
 public import FormalizeSampling.Audit.Diffusion
 
 /-!
-# Statement audit: memorisation and deterministic-sampler witnesses (DF-2, DF-3, DF-7, DF-9, DF-10)
+# Statement audit: memorisation and deterministic versus stochastic samplers
 
-Non-vacuity witnesses for the diffusion rows DF-2, DF-3, DF-7, DF-9 and DF-10: each headline
-theorem is applied to a concrete instance on `Fin 1 → ℝ` with every hypothesis discharged in Lean,
-and the conclusion is made explicit.
+Rows: DF-2, DF-3, DF-7, DF-9, DF-10.
+
+Non-vacuity witnesses for these diffusion rows: each headline theorem is applied to a concrete
+instance on `Fin 1 → ℝ` with every hypothesis discharged in Lean, and the conclusion is made
+explicit.
 
 * **DF-2** (`DiffusionMemorization.output_concentrates_on_training_set`): training set
   `{0, 1}` (empirical law of two distinct points, no Lebesgue density), radius `ρ = 1/4`,

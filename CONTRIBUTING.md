@@ -6,16 +6,19 @@
   contains no `sorry`, `admit`, `axiom`, `native_decide`, `implemented_by`, `extern` or other
   trust-boundary overrides; `scripts/check_contracts.py` enforces this.
 - Every public theorem has a docstring stating its mathematics and assumptions. Core results
-  have a row in `docs/theorem_registry.md`, with IDs from `docs/blueprint.md`, section 4.
-- `docs/declaration_index.md` is generated: after adding or changing a documented theorem, run
-  `python3 scripts/check_contracts.py --write-index`; the checker rejects a stale index.
+  have a row in `docs/theorem_registry.md`, with IDs from `docs/blueprint.md`, section 4, in the
+  section of their area, and a witness in a module of `FormalizeSampling/Audit/` whose docstring
+  starts with the title `# Statement audit: <summary>` and lists the row on its `Rows:` line.
+- `docs/declaration_index.md` and the coverage and Layout blocks of the README are generated:
+  after changing a documented theorem, a registry row, the docstring of an Audit module or the
+  directory descriptions (`GROUPS` and `LAYERS` in `scripts/check_contracts.py`), run
+  `python3 scripts/check_contracts.py --write`; the checker rejects stale output.
 - Library Lean files have lines of at most 100 characters; they, the Markdown files at the top
   level and in `docs/`, and `showcase/README.md` and `experiments/README.md` have no trailing
   whitespace.
-- A module imports only modules of its own or a lower layer: `Foundations` < `Identities`,
-  `Kernels` < `Flow`, `ScoreEstimation` < `Samplers` < `Examples`, `Counterexamples` < `Audit`.
-  A tool needed by a lower layer goes into that layer. A new module is imported by
-  `FormalizeSampling.lean` and, if it lies in the three lowest layers, by
+- A module imports only modules of its own or a lower layer, in the order given under
+  [Layout](README.md#layout). A tool needed by a lower layer goes into that layer. A new module
+  is imported by `FormalizeSampling.lean` and, if it lies in a layer of the core, by
   `FormalizeSampling/Core.lean`; `scripts/check_contracts.py` enforces all of this.
 - Every file is a Lean module with Mathlib's header conventions: `module`, the `public import`s
   (the Mathlib modules the file uses, not the whole of `Mathlib`), the module docstring, then

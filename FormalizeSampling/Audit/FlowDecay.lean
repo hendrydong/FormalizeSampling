@@ -9,12 +9,13 @@ public import FormalizeSampling.Foundations.TotalVariation
 public import FormalizeSampling.Kernels.GaussianKernels
 
 /-!
-# Statement audit FlowDecay (FL-1 .. FL-4): non-vacuity witnesses
+# Statement audit: KL first variation, dissipation and decay along continuity equations
 
-Audit of the registry rows FL-1, FL-2, FL-3, FL-4 (`docs/theorem_registry.md`); a summary is
-in `docs/statement_audit.md`. Each theorem below applies a headline theorem of these rows to a
-concrete instance, discharging every hypothesis, and where cheap shows that the conclusion is
-non-trivial (nonzero KL, equality cases).
+Rows: FL-1, FL-2, FL-3, FL-4.
+
+Non-vacuity witnesses for these rows of `docs/theorem_registry.md`. Each theorem below applies a
+headline theorem of these rows to a concrete instance, discharging every hypothesis, and where cheap
+shows that the conclusion is non-trivial (nonzero KL, equality cases).
 
 ## Instances
 

@@ -22,10 +22,12 @@ public import FormalizeSampling.Samplers.ProximalHeatFlow
 public import FormalizeSampling.Samplers.EuclideanTransfer
 
 /-!
-# Statement audit of PX-2 (group `ProximalGeneral`): non-vacuity witnesses
+# Statement audit: proximal sampler under an LSI, for log-concave and strongly log-concave targets
 
-This file applies the PX-2 theorems to concrete instances, discharging every hypothesis, to check
-that the hypotheses are jointly satisfiable in non-degenerate situations (`η > 0`, `d ≥ 1`,
+Rows: PX-2, PX-5, PX-6.
+
+This file applies the theorems of these rows to concrete instances, discharging every hypothesis, to
+check that the hypotheses are jointly satisfiable in non-degenerate situations (`η > 0`, `d ≥ 1`,
 `0 < KL(ρ₀‖π) < ∞`). It proves nothing new about the sampler.
 
 Instances used:

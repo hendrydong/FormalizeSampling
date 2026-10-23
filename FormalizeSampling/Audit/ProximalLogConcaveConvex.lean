@@ -3,7 +3,9 @@ module
 public import FormalizeSampling.Samplers.ProximalLogConcaveRateConvexPi
 
 /-!
-# Statement audit of the `1/k` rate for convex potentials: a non-vacuity witness
+# Statement audit: the `1/k` rate for the convex, non-smooth potential `‖x‖_∞`
+
+Rows: PX-5.
 
 This file instantiates `ProximalLogConcaveRateConvexPi.klDiv_iteratePi_le_div_of_convexOn` for
 the sup-norm potential `fSup x = ‖x‖_∞ = maxᵢ |xᵢ|` on `Fin d → ℝ`, i.e. the target
