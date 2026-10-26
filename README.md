@@ -1,5 +1,7 @@
 # FormalizeSampling
 
+[![Lean proofs and experiment checks](https://github.com/hendrydong/FormalizeSampling/actions/workflows/lean.yml/badge.svg?branch=main)](https://github.com/hendrydong/FormalizeSampling/actions/workflows/lean.yml)
+
 **Machine-checked versions of published convergence theorems for sampling algorithms, in Lean 4
 and Mathlib, and the framework they are built from.**
 
@@ -504,8 +506,8 @@ uvx ruff@0.16.10 format --check scripts experiments tests showcase
 
 CI (`.github/workflows/lean.yml`) runs the same checks, installing `ruff` from
 `requirements-dev.txt`, and compiles the Lean examples of [Using
-FormalizeSampling](#using-formalizesampling); it is started manually from the repository's Actions
-tab.
+FormalizeSampling](#using-formalizesampling); it runs on every push to `main` and on every pull
+request.
 
 ## Statuses
 
@@ -528,7 +530,7 @@ Apache License 2.0; see [`LICENSE`](LICENSE).
 
 ## Citation
 
-If you use this library, please cite it as:
+If you use this library, please cite it as follows (also in [`CITATION.cff`](CITATION.cff)):
 
 ```bibtex
 @misc{dong2026formalizesampling,

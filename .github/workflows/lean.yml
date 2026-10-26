@@ -1,7 +1,9 @@
 name: Lean proofs and experiment checks
 
 on:
-  # Run full verification from the Actions tab when a revision is ready.
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -14,7 +16,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       # The Mathlib build plus the compressed .lake cache can exhaust the runner's disk;

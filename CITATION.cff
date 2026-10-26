@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this library, please cite it as below."
+title: "FormalizeSampling"
+abstract: "Machine-checked versions of published convergence theorems for sampling algorithms, in Lean 4 and Mathlib, and the framework they are built from."
+type: software
+authors:
+  - family-names: Dong
+    given-names: Hanze
+repository-code: "https://github.com/hendrydong/FormalizeSampling"
+license: Apache-2.0
+keywords:
+  - Lean 4
+  - Mathlib
+  - formal verification
+  - sampling
+  - diffusion models
+  - Langevin dynamics
+  - proximal sampler
