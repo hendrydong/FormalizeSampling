@@ -39,7 +39,7 @@ def docFiles : List String :=
     "showcase/README.md", "experiments/README.md"]
 
 /-- Last components of code spans that name files rather than declarations. -/
-def fileExtensions : List String := ["lean", "md", "py", "png", "toml", "json", "txt", "yml"]
+def fileExtensions : List String := ["lean", "md", "py", "png", "toml", "json", "txt", "yml", "cff"]
 
 /-- First components of code spans that name Python objects (the illustrations' libraries). -/
 def pythonModules : List String := ["fractions", "math", "numpy", "np", "scipy", "matplotlib"]
