@@ -570,8 +570,8 @@ theorem exists_bwd_envelopePi (hη : 0 < η) (hC : 0 ≤ C)
     simp only [Bnd]; ring
   have hd0 : (0 : ℝ) ≤ d := Nat.cast_nonneg d
   have h1B : Bnd ≤ ((d : ℝ) + 3) * Bnd := le_mul_of_one_le_left hBnd0 (by linarith)
-  have h3B : 3 * Bnd ≤ ((d : ℝ) + 3) * Bnd := by nlinarith
-  have hdB : (d : ℝ) * Bnd ≤ ((d : ℝ) + 3) * Bnd := by nlinarith
+  have h3B : 3 * Bnd ≤ ((d : ℝ) + 3) * Bnd := mul_le_mul_of_nonneg_right (by linarith) hBnd0
+  have hdB : (d : ℝ) * Bnd ≤ ((d : ℝ) + 3) * Bnd := mul_le_mul_of_nonneg_right (by linarith) hBnd0
   have bp : ∀ {w1 w2 u1 u2 : ℝ}, |w1| ≤ n * (N * e) → |w2| ≤ n * (N * e) → |u1| ≤ n * M →
       |u2| ≤ n * M → u1 ^ 2 / u ≤ n * M →
       |w * (u * Real.log u)| ≤ Bnd ∧

@@ -403,7 +403,7 @@ theorem emOp_generator_lyap (hφ : TestFunction2 φ) {B : ℝ} (hB0 : 0 ≤ B) {
   have hε₁0 : 0 < ε₁ := by positivity
   have hε₁B : ε₁ * (2 * (B + D)) ≤ ε / 2 := by
     rw [hε₁, div_mul_eq_mul_div, div_le_div_iff₀ (by positivity) (by norm_num)]
-    nlinarith
+    linarith
   obtain ⟨K, hK, hgen⟩ := abs_integral_drift_generator_le hφ hD hε₁0
   set E := gaussNormMean (d := d) with hEdef
   have hE : 0 ≤ E := integral_nonneg fun z => norm_nonneg z
@@ -429,16 +429,16 @@ theorem emOp_generator_lyap (hφ : TestFunction2 φ) {B : ℝ} (hB0 : 0 ≤ B) {
   have hv0 := norm_nonneg v
   have hs0 : 0 ≤ Real.sqrt (2 * D * h) := Real.sqrt_nonneg _
   have t1 : ε₁ * (‖v‖ + D) ≤ ε / 2 * lyap x := by
-    have : ‖v‖ + D ≤ (B + D) * r := by nlinarith
+    have : ‖v‖ + D ≤ (B + D) * r := by linarith [mul_le_mul_of_nonneg_left hr1 hD.le]
     have h2 : ε₁ * (‖v‖ + D) ≤ ε₁ * ((B + D) * r) := by gcongr
     have h3 : ε₁ * ((B + D) * r) ≤ ε₁ * ((B + D) * (2 * lyap x)) := by
       gcongr
-    nlinarith
+    linarith [mul_le_mul_of_nonneg_right hε₁B (lyap_pos x).le]
   have t2 : K * (‖v‖ + 1) * (h * ‖v‖ + Real.sqrt (2 * D * h) * E) ≤ ε / 2 * lyap x := by
-    have a1 : ‖v‖ + 1 ≤ (B + 1) * r := by nlinarith
+    have a1 : ‖v‖ + 1 ≤ (B + 1) * r := by linarith
     have a2 : h * ‖v‖ + Real.sqrt (2 * D * h) * E ≤ (h * B + Real.sqrt (2 * D * h) * E) * r := by
       have : h * ‖v‖ ≤ h * (B * r) := mul_le_mul_of_nonneg_left hbx hh.le
-      nlinarith [mul_nonneg hs0 hE]
+      linarith [mul_le_mul_of_nonneg_left hr1 (mul_nonneg hs0 hE)]
     have a3 : K * (‖v‖ + 1) * (h * ‖v‖ + Real.sqrt (2 * D * h) * E) ≤
         K * ((B + 1) * r) * ((h * B + Real.sqrt (2 * D * h) * E) * r) := by
       gcongr
@@ -452,7 +452,7 @@ theorem emOp_generator_lyap (hφ : TestFunction2 φ) {B : ℝ} (hB0 : 0 ≤ B) {
     have a7 : q h * lyap x ≤ ε / 2 * lyap x :=
       mul_le_mul_of_nonneg_right hqh.le (lyap_pos x).le
     linarith
-  nlinarith [mul_le_mul_of_nonneg_left (add_le_add t1 t2) hh.le]
+  linarith [mul_le_mul_of_nonneg_left (add_le_add t1 t2) hh.le]
 
 end Generator
 

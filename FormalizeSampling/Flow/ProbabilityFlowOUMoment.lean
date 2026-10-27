@@ -344,7 +344,7 @@ theorem abs_genK_le (hS₀ : 0 < S₀) (h1 : S₀ ≤ s) (h2 : s ≤ v) {c : ℝ
       have h3 : |z i + c * y i| ≤ |z i| + |y i| := by
         refine (abs_add_le _ _).trans ?_
         rw [abs_mul, abs_of_nonneg hc0]
-        nlinarith [abs_nonneg (y i)]
+        linarith [mul_le_of_le_one_left (abs_nonneg (y i)) hc1]
       have h4 : |z i| ≤ u := abs_le_one_add_sum_sq z i
       calc |z i + c * y i| * |z i| ≤ (|z i| + |y i|) * |z i| :=
             mul_le_mul_of_nonneg_right h3 (abs_nonneg _)
@@ -367,7 +367,7 @@ theorem abs_genK_le (hS₀ : 0 < S₀) (h1 : S₀ ≤ s) (h2 : s ≤ v) {c : ℝ
       rw [mul_one_div]
       exact (div_le_div_of_nonneg_left hd hS₀ h1).trans (le_mul_of_one_le_right (by positivity) hu)
     have e3 : u / S₀ ^ 2 = 1 / S₀ ^ 2 * u := by ring
-    nlinarith
+    linarith
   have hxzφ : |x ⬝ᵥ heatGradPi s z| ≤ ell y / S₀ * (u * φ) := by
     rw [hdot, abs_mul, abs_neg, abs_div, abs_of_pos hs, abs_of_pos hφ]
     calc |∑ i, x i * z i| / s * φ ≤ ell y * u / S₀ * φ := by
@@ -390,14 +390,14 @@ theorem abs_genK_le (hS₀ : 0 < S₀) (h1 : S₀ ≤ s) (h2 : s ≤ v) {c : ℝ
     have e' := abs_add_le ((d : ℝ) * φ) (x ⬝ᵥ heatGradPi s z)
     have k1 : (d : ℝ) * (u * φ) ≤ d * ell y * (u * φ) := by
       have := mul_le_mul_of_nonneg_left hℓ hd
-      nlinarith
+      linarith [mul_le_mul_of_nonneg_right this hP]
     have k3 : v * (1 / S₀ ^ 2 + d / S₀) * (u * φ) ≤
         v * (1 / S₀ ^ 2 + d / S₀) * ell y * (u * φ) := by
       have := mul_le_mul_of_nonneg_left hℓ hB
-      nlinarith
+      linarith [mul_le_mul_of_nonneg_right this hP]
     have k2 : ell y / S₀ * (u * φ) = 1 / S₀ * ell y * (u * φ) := by ring
     unfold genA
-    nlinarith
+    linarith
   refine hgen.trans (mul_le_mul_of_nonneg_left henv ?_)
   unfold genA
   have := one_le_ell y
@@ -743,7 +743,7 @@ theorem transportKLRegularity_ou_moment
     abs_flux_aux ha.le (hu x) hv.le (hp x) (abs_le_one_add_sum_sq x i)
       ((hG x i).trans (by
         have := mul_le_mul_of_nonneg_left (hu x) (mul_nonneg hA₁ (hP x))
-        nlinarith))
+        linarith))
   -- the time-uniform domination: the moving-centre tube
   set cm := ouC a (3 * t₀ / 2)
   set cp := ouC a (t₀ / 2)
@@ -772,7 +772,7 @@ theorem transportKLRegularity_ou_moment
       have h5 := sum_sq_nonneg (scalePi cp y)
       have h6 := sum_sq_nonneg y
       rw [Real.norm_of_nonneg (by positivity), pow_one]
-      have h7 : ell y ≤ 2 * (1 + d) * (1 + ∑ i, y i ^ 2) := by nlinarith
+      have h7 : ell y ≤ 2 * (1 + d) * (1 + ∑ i, y i ^ 2) := (le_self_pow₀ h4 two_ne_zero).trans h3
       calc (1 + ∑ i, scalePi cp y i ^ 2) * ell y
           ≤ (1 + ∑ i, y i ^ 2) * (2 * (1 + d) * (1 + ∑ i, y i ^ 2)) :=
             mul_le_mul h2 h7 (by linarith) (by linarith)
@@ -847,11 +847,11 @@ theorem transportKLRegularity_ou_moment
     have ht0 : 0 < t := by linarith
     have h1t : S₀ ≤ ouS v a t := ouS_mono hv ha htt.le
     have hc0 : 0 ≤ ouC a t := (ouC_pos a t).le
-    have hc1 : ouC a t ≤ 1 := by have := ouC_sq_le_one ha.le ht0.le; nlinarith
+    have hc1 : ouC a t ≤ 1 := (sq_le_one_iff₀ hc0).1 (ouC_sq_le_one ha.le ht0.le)
     have hcm : cm ≤ ouC a t := by
-      simp only [cm, ouC]; exact Real.exp_le_exp.2 (by nlinarith)
+      simp only [cm, ouC]; exact Real.exp_le_exp.2 (mul_le_mul_of_nonpos_left htt'.le (by linarith))
     have hcp' : ouC a t ≤ cp := by
-      simp only [cp, ouC]; exact Real.exp_le_exp.2 (by nlinarith)
+      simp only [cp, ouC]; exact Real.exp_le_exp.2 (mul_le_mul_of_nonpos_left htt.le (by linarith))
     have hgc := gc_pos (d := d) hv2
     have hell := integrable_ell ρ hmom
     have hint1 : ∀ c' : ℝ,
@@ -926,7 +926,7 @@ theorem transportKLRegularity_ou_moment
       have hlt := abs_log_ouDensity_div_le_moment ρ hmom hv ha ht0 hS₀ h1t x
       refine (abs_add_le _ _).trans ?_
       rw [abs_one]
-      nlinarith [hu x]
+      linarith [hu x]
     have eJ₁ : J₁ x = (1 + ∑ i, x i ^ 2) *
         ∫ y, ell y * heatDensityPi (2 * v) (x - scalePi cp y) ∂ρ := by
       simp only [J₁, pow_one, integral_const_mul]
@@ -965,8 +965,8 @@ theorem transportKLRegularity_ou_moment
       funext fun x => by rw [partialDeriv_ouFlux ρ hv ha ht₀ i x]
     rw [e]
     have := hHc i
-    exact integrable_of_le_ouQ ρ hmom4 hv ha ht₀.le (by fun_prop) (by positivity) hK
-      (by norm_num) (fun x => abs_mul_log_aux (hdfluxb i x) (hlog x))
+    exact integrable_of_le_ouQ ρ hmom4 hv ha ht₀.le (Continuous.mul (by fun_prop) hlc)
+      (by positivity) hK (by norm_num) (fun x => abs_mul_log_aux (hdfluxb i x) (hlog x))
   · -- `p vᵢ log(p/π)`
     have e : (fun x => ouDensity ρ v a t₀ x * ouVelocity ρ v a t₀ x i *
         Real.log (ouDensity ρ v a t₀ x / heatDensityPi v x)) =
@@ -974,8 +974,8 @@ theorem transportKLRegularity_ou_moment
           Real.log (ouDensity ρ v a t₀ x / heatDensityPi v x) :=
       funext fun x => by rw [ouDensity_mul_ouVelocity ρ hv ha ht₀ x i]
     rw [e]
-    exact integrable_of_le_ouQ ρ hmom4 hv ha ht₀.le (by fun_prop) (by positivity) hK
-      (by norm_num) (fun x => abs_mul_log_aux (hfluxb i x) (hlog x))
+    exact integrable_of_le_ouQ ρ hmom4 hv ha ht₀.le (Continuous.mul (by fun_prop) hlc)
+      (by positivity) hK (by norm_num) (fun x => abs_mul_log_aux (hfluxb i x) (hlog x))
   · -- `vᵢ (∇log p - ∇log π)ᵢ p`
     have e : (fun x => ouVelocity ρ v a t₀ x i *
         (score (ouDensity ρ v a t₀) x i - score (heatDensityPi v) x i) * ouDensity ρ v a t₀ x) =

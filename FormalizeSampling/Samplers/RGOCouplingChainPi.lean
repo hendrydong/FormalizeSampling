@@ -240,9 +240,12 @@ theorem hasLipRep_of_contraction (K : Kernel (Fin d → ℝ) (Fin d → ℝ)) [I
   have hθ' : 1 - θ < 1 := by linarith
   -- the moment variable and the a.s. finite weighted sum
   set V : Ω₀ → ℝ := fun a => eDist (H 0 0 a) 0 with hVdef
-  have hV : Measurable V := continuous_eDist.measurable.comp
-    ((hH.comp ((measurable_const.prodMk measurable_const).prodMk measurable_id)).prodMk
-      measurable_const)
+  have hV : Measurable V := by
+    -- elaborate the composite before matching it with `V` (unifying against `V` is slow)
+    have h1 : Measurable fun a : Ω₀ => (H 0 0 a, (0 : Fin d → ℝ)) :=
+      (hH.comp ((measurable_const.prodMk measurable_const).prodMk measurable_id)).prodMk
+        measurable_const
+    exact (continuous_eDist.measurable.comp h1 :)
   set S : (ℕ → Ω₀) → ℝ≥0∞ := fun ω =>
     ∑' n, ENNReal.ofReal ((1 - θ) ^ n) * ENNReal.ofReal (V (ω n)) with hSdef
   have hSm : Measurable S := Measurable.tsum fun n =>

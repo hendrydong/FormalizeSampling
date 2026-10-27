@@ -231,8 +231,8 @@ theorem exists_bwdRatio_bounds (hη : 0 < η) (hC : 0 ≤ C)
       field_simp
     rw [e] at h1
     simp only [hkb]
-    have := sq_nonneg v
-    nlinarith
+    have := mul_le_mul_of_nonneg_left h1 (by positivity : (0 : ℝ) ≤ 1 + v ^ 2)
+    linarith
   -- boundedness in `y` of the integrands, for a fixed `z`
   obtain ⟨Kb, Lb, hKb, hLb, hbb⟩ := exists_bwd_bound π hb le_rfl hbη
   have hkb_div : ∀ z y, kb (z - y) / heatFlowDensity π η y ≤ A₀ * (Kb * Real.exp (Lb * z ^ 2)) :=
@@ -249,10 +249,11 @@ theorem exists_bwdRatio_bounds (hη : 0 < η) (hC : 0 ≤ C)
     integral_div_le_of_warm π μ hη hC hwarm hkb0 hkbi z
   set D : ℝ := (1 + 1 / a) ^ 2 with hD
   have hD1 : 1 ≤ D := by have : 0 < 1 / a := by positivity
-                         nlinarith
+                         exact one_le_pow₀ (by linarith)
   have hDa : 1 / a ^ 2 ≤ D := by
     have : 0 < 1 / a := by positivity
-    rw [hD, show 1 / a ^ 2 = (1 / a) ^ 2 by ring]; nlinarith
+    rw [hD, show 1 / a ^ 2 = (1 / a) ^ 2 by ring]
+    exact pow_le_pow_left₀ this.le (by linarith) 2
   set M : ℝ := D * (C * ∫ v, kb v) with hM
   have hIk : 0 ≤ ∫ v, kb v := integral_nonneg hkb0
   -- lower bound
@@ -355,8 +356,7 @@ theorem exists_bwdRatio_bounds (hη : 0 < η) (hC : 0 ≤ C)
             rw [integral_const_mul, hM]
             exact mul_le_mul_of_nonneg_left (hwarmk z) (by positivity)
     rw [div_le_iff₀ hU0]
-    have hB0 : 0 ≤ ∫ y, B y ^ 2 ∂μ := integral_nonneg fun y => sq_nonneg (B y)
-    nlinarith
+    linarith [mul_le_mul_of_nonneg_left hBint hU0.le]
   -- the logarithm
   have hUlow : c₀ * Real.exp (-(|z| + R) ^ 2 / (2 * a)) ≤ bwdRatio π μ η r z := by
     have hwle : ∀ y, Real.sqrt (2 * Real.pi * η) * heatDensity r (z - y)
@@ -370,7 +370,7 @@ theorem exists_bwdRatio_bounds (hη : 0 < η) (hC : 0 ≤ C)
             ≤ Real.sqrt (2 * Real.pi * η) * (Real.sqrt (2 * Real.pi * η))⁻¹ := by gcongr
           _ = 1 := mul_inv_cancel₀ hs.ne'
       have := (heatDensity_pos hr0 (z - y)).le
-      nlinarith
+      linarith [mul_le_mul_of_nonneg_left h2 this]
     have hφμ : Integrable (fun y => heatDensity r (z - y)) μ :=
       Integrable.of_bound ((continuous_heatDensity r).comp (by fun_prop)).aestronglyMeasurable
         (Real.sqrt (2 * Real.pi * r))⁻¹ (Eventually.of_forall fun y => by
@@ -385,7 +385,7 @@ theorem exists_bwdRatio_bounds (hη : 0 < η) (hC : 0 ≤ C)
       refine mul_le_mul_of_nonneg_left (mul_le_mul ?_ ?_ (Real.exp_pos _).le
         (inv_nonneg.2 (Real.sqrt_nonneg _))) hm.le
       · exact inv_anti₀ (Real.sqrt_pos.2 (by positivity))
-          (Real.sqrt_le_sqrt (by nlinarith [Real.pi_pos, hr.2]))
+          (Real.sqrt_le_sqrt (by gcongr; exact hr.2))
       · refine Real.exp_le_exp.2 ?_
         rw [neg_div, neg_div, neg_le_neg_iff]
         exact div_le_div_of_nonneg_left (sq_nonneg _) (by positivity) (by linarith [hr.1])

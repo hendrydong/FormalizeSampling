@@ -188,7 +188,7 @@ theorem tvSup_randomEmChain_le_sqrt [IsProbabilityMeasure (μ 0)] [IsProbability
 end Chain
 
 section MonteCarlo
-variable {d : ℕ}
+variable {d n : ℕ}
 
 /-- The empirical mean `(1/n) ∑ⱼ ωⱼ` of `n` points of `Fin d → ℝ`. -/
 noncomputable def empMean (ω : Fin n → Fin d → ℝ) : Fin d → ℝ := (1 / (n : ℝ)) • ∑ j, ω j

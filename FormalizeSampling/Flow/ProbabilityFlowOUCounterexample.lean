@@ -321,7 +321,7 @@ theorem domination_integrand_ge (hr : 0 < r) (h1 : r < 1 / 2) (hv : 0 < v) (ha :
   have hs : 0 < s := ouS_pos hv ha ht
   have hsv : s ≤ v := ouS_le hv
   have hc0 : 0 < c := ouC_pos a t
-  have hc1 : c ≤ 1 := by have := ouC_sq_le_one ha.le ht.le; nlinarith
+  have hc1 : c ≤ 1 := (sq_le_one_iff₀ hc0.le).1 (ouC_sq_le_one ha.le ht.le)
   have hm0 := mZero_pos (S₀ := S₀) hv
   have hm0s := mZero_le hS₀ hSt hsv
   have hxpos : 0 < x := by have : 0 < 8 * v ^ 2 / S₀ := by positivity
@@ -365,14 +365,14 @@ theorem domination_integrand_ge (hr : 0 < r) (h1 : r < 1 / 2) (hv : 0 < v) (ha :
         have e4 : v / S₀ ≤ x / (8 * v) := by
           rw [div_le_div_iff₀ hS₀ (by positivity)]
           rw [div_le_iff₀ hS₀] at hx
-          nlinarith
+          linarith
         have e5 : x / (2 * v) = (3 / 4) * (x / v) - x / (8 * v) - x / (8 * v) := by
           field_simp; ring
         have e6 : 1 - x * (-3 / 4) / s + v * ((-3 / 4) ^ 2 / s ^ 2 - 1 / s) =
             1 + (3 / 4) * (x / s) + v * ((-3 / 4 : ℝ) ^ 2 / s ^ 2) - v / s := by ring
         rw [e5, e6]
         have : 0 ≤ x / (8 * v) := by positivity
-        nlinarith
+        linarith
       exact mul_le_mul hm0s hb (by positivity) (mul_pos (gc_pos hs) (Real.exp_pos _)).le
   have hj : ∀ j, j ≠ k → -(E * ell (atom j)) ≤ genK s v X (scalePi c (atom j)) := by
     intro j hjk
