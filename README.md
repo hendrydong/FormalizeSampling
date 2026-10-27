@@ -70,7 +70,9 @@ theorems and 54 core results: 43 Verified, 8 formal counterexamples, 3 Condition
 
 Each row is a published theorem of which Lean proves a version. "What Lean proves" paraphrases the
 headline Lean statements; their docstrings and the [registry](docs/theorem_registry.md) give the
-exact hypotheses. "Differences from the paper" follows the step-by-step reading in
+exact hypotheses. IDs such as DF-1 or PX-6, in the last column and throughout this README, refer
+to rows of the registry, one row per core result; [Coverage at a glance](#coverage-at-a-glance)
+groups them by area. "Differences from the paper" follows the step-by-step reading in
 [`docs/literature.md`](docs/literature.md), including the parts that are not formalised. Lemmas
 and related statements from further works are in the [literature map](#literature-map).
 
@@ -82,8 +84,10 @@ $`p_1`$ is the data noised up to the early-stopping time $`t_1`$. The DDPM sampl
 $`\mathcal{N}(0, I)`$ and steps
 $`y \mapsto \mathcal{N}((y + \beta_k s_k(y))/\alpha_k, \sigma_k^2 I)`$ for $`k = N, \ldots, 2`$,
 with a learned score $`s_k`$; its output is $`q_1`$. A deterministic sampler (probability-flow ODE /
-DDIM) instead steps $`y \mapsto A_k(y) + b_k s_k(y)`$, with no noise. TV between two laws
-$`P, Q`$ is $`\sup_A \lvert P(A) - Q(A) \rvert`$.
+DDIM) instead steps $`y \mapsto A_k(y) + b_k s_k(y)`$, with no noise, for maps $`A_k`$ and score
+coefficients $`b_k \in \mathbb{R}`$; the exponential-integrator step of the probability-flow ODE
+has $`A_k(y) = y/\alpha_k`$ and $`b_k = 1/\alpha_k - 1`$. TV between two laws $`P, Q`$ is
+$`\sup_A \lvert P(A) - Q(A) \rvert`$.
 
 | Work and theorem | What Lean proves | Differences from the paper | Status and Lean names |
 |---|---|---|---|
@@ -96,7 +100,7 @@ $`P, Q`$ is $`\sup_A \lvert P(A) - Q(A) \rvert`$.
 | [Gross (1975)](https://doi.org/10.2307/2373688), the Gaussian log-Sobolev inequality | $`\mathcal{N}(0, tI)`$ satisfies the functional log-Sobolev inequality with constant $`t`$, for every $`t \gt 0`$. KL form: $`\mathrm{KL}(\rho \Vert \mathcal{N}(0, vI)) \le (v/2) \, I(\rho \Vert \mathcal{N}(0, vI))`$ for $`\rho`$ with a positive differentiable density, finite second moment and finite relative Fisher information, and along the heat flow from every law with finite second moment | The functional form is stated for differentiable, bounded test functions with bounded gradient and a positive lower bound, and extended to positive $`C^1`$ functions with integrability. Proof: the KL form, from the de Bruijn identity and the decay of Fisher information along the heat flow. Not formalised: the equivalence with hypercontractivity | KL-5, KL-6 Verified: `GaussianFunctionalLSIPi.functionalLSIPi_gaussian`, `GaussianLSIZeroPi.klDiv_le_fisher0` |
 | [Bakry–Émery (1985)](https://www.numdam.org/item/SPS_1985__19__177_0/), the log-Sobolev inequality given by their curvature criterion (Corollaire 2 with Proposition 4) | If $`\alpha \gt 0`$ and $`f - \alpha \Vert x \Vert^2/2`$ is convex on `Fin d → ℝ`, then $`\pi \propto e^{-f}`$ satisfies $`\mathrm{Ent}_\pi(g^2) \le (2/\alpha) \int \Vert \nabla g \Vert^2 \, d\pi`$ for every test function $`g`$. Also the Prékopa–Leindler inequality for measurable functions on `Fin d → ℝ` with values in $`[0, \infty]`$ | Only the conclusion, for Gibbs measures on $`\mathbb{R}^d`$, proved by the Bobkov–Ledoux route through Prékopa–Leindler. Not formalised: the $`\Gamma_2`$ criterion and the semigroup argument, the equivalence with hypercontractivity. Test functions as in the row above | KL-6 Verified: `BakryEmeryGeneralPi.functionalLSIPi_targetPi_of_convexOn`, `PrekopaLeindler.prekopa_leindler` |
 | [Holley–Stroock (1987)](https://doi.org/10.1007/BF01011161), the bounded-perturbation lemma | If $`\mu`$ satisfies the functional log-Sobolev inequality with constant $`C \ge 0`$ and $`W`$ is measurable with $`a \le W \le b`$, then $`e^{-W}\mu/Z`$ satisfies it with constant $`C e^{b-a}`$, on $`\mathbb{R}`$ and on `Fin d → ℝ` | Pointwise bounds on $`W`$. Not formalised: the log-Sobolev inequalities for stochastic Ising models, the paper's main subject | KL-6 Verified: `GaussianFunctionalLSIPi.functionalLSIPi_tilt`, `HolleyStroock.functionalLSI_tilt` |
-| [DiPerna–Lions (1989)](https://doi.org/10.1007/BF01393835), Theorem II.2 | For an autonomous velocity $`v \in W^{1,1}_{\mathrm{loc}}`$ with essentially bounded divergence, bounded or of linear growth, uniformly bounded probability-density solutions of the weak continuity equation with the same initial density coincide a.e. for every $`t \ge 0`$. The same for probability densities bounded in $`L^p`$ ($`1 \lt p \lt \infty`$) when $`v \in W^{1,q}_{\mathrm{loc}}`$ ($`1/p + 1/q = 1`$) has bounded divergence and linear growth | Autonomous velocities and probability-density solutions only. Not formalised: time-dependent velocities, signed solutions, the $`L^1`$ theory, existence (Proposition II.1), stability (Theorem II.4) and the flows of §III | No named hypothesis; listed under FL-5, which is Conditional overall: `NoiseScore.ae_eq_of_weakContinuityDensity_diPernaLions_linearGrowth`, `NoiseScore.ae_eq_of_weakContinuityDensity_diPernaLions_Lp` |
+| [DiPerna–Lions (1989)](https://doi.org/10.1007/BF01393835), Theorem II.2 | For an autonomous velocity $`v \in W^{1,1}_{\mathrm{loc}}`$ with essentially bounded divergence, bounded or of linear growth, uniformly bounded probability-density solutions of the weak continuity equation with the same initial density coincide a.e. for every $`t \ge 0`$. The same for probability densities bounded in $`L^p`$ ($`1 \lt p \lt \infty`$) when $`v \in W^{1,q}_{\mathrm{loc}}`$ ($`1/p + 1/q = 1`$) has bounded divergence and linear growth | Autonomous velocities and probability-density solutions only. Not formalised: time-dependent velocities, signed solutions, the $`L^1`$ theory, existence (Proposition II.1), stability (Theorem II.4) and the flows of §III | Proved with no named hypothesis (filed under FL-5, whose general form is Conditional): `NoiseScore.ae_eq_of_weakContinuityDensity_diPernaLions_linearGrowth`, `NoiseScore.ae_eq_of_weakContinuityDensity_diPernaLions_Lp` |
 | [Bogachev–Krylov–Röckner–Shaposhnikov (2015)](https://doi.org/10.1090/surv/207), Ch. 9: uniqueness of probability solutions of the Fokker–Planck–Kolmogorov equation | For $`D \gt 0`$ and a drift jointly continuous in $`(t, x)`$ and Lipschitz in $`x`$ uniformly on each $`[0, T]`$, probability solutions of the weak Fokker–Planck equation with the same initial law coincide for $`t \ge 0`$, with no moment, density or tightness assumption, and a solution exists. For autonomous drifts every solution is the weak limit of the dyadic Euler–Maruyama laws; Langevin dynamics with Lipschitz $`\nabla U`$ is well-posed | The globally Lipschitz case of the theorem for drifts with $`\langle b(t, x), x \rangle \le C + C \Vert x \Vert^2`$, with a constant scalar diffusion $`D`$. Not formalised: dissipative drifts that are not globally Lipschitz, degenerate and matrix diffusions, a rate for the Euler–Maruyama convergence. Proof: an approximate Kolmogorov duality, with no SDE theory | FL-6 Verified: `FokkerPlanckUniqueness.eq_of_weakFokkerPlanck_lipschitz`, `FokkerPlanckUniqueness.existsUnique_weakFokkerPlanck_lipschitz_continuousTime`, `FokkerPlanckUniqueness.tendsto_emCurveP_of_weakFokkerPlanck_lipschitz` |
 | PFG: [Dong–Wang–Lin–Zhang (2023)](https://arxiv.org/abs/2211.13954), Proposition 1 and Theorem 1 | Proposition 1: over any class of admissible fields, the PFG objective and $`\tfrac12 \int \Vert f - H^{-1} \nabla \log(\pi/\rho) \Vert_H^2 \, d\rho`$ have the same minimisers. Theorem 1: take a flow of positive densities solving the continuity equation whose velocity minimises the objective over a class closed under negation, with [A3] (one $`\varepsilon \lt 1`$) and [A4] (the target's log-Sobolev inequality with constant $`\lambda`$, used in the form it takes along the flow) as hypotheses and $`\lambda_{\max}(H) \le m`$. Then $`\frac{d}{dt}\mathrm{KL} \le -\frac{1-\varepsilon}{2} I_{H^{-1}}`$ and $`\mathrm{KL}(t) \le e^{-(1-\varepsilon)\lambda t/m} \, \mathrm{KL}(0)`$ | $`H`$ constant and positive definite, or time-dependent and state-independent. The flow, its regularity and the minimiser are hypotheses. Not formalised: the estimated preconditioner, the RKHS case, the strict inequality of Proposition 2, App. A.6 beyond dimension one | SE-1 Verified (Proposition 1); FL-4 Conditional on [A3], [A4] and the flow hypotheses (Theorem 1): `SteinObjective.isMinOn_steinObjective_iff`, `KLDissipation.klDecay_of_steinMinimiser` |
 
@@ -221,10 +225,10 @@ by [Li–Cai (2024)](https://arxiv.org/abs/2410.23285) for an accelerated sample
 Diffusion-model analyses sum KL errors step by step
 ([Chen–Lee–Lu, 2023](https://arxiv.org/abs/2211.01916)) or along the path
 ([Chen et al., 2023](https://arxiv.org/abs/2209.11215)) and apply Pinsker once. Lean proves this
-route for Gaussian-increment chains $`x \mapsto \mathcal{N}(x + h_k b_k(x), 2h_k I)`$ (ULA,
-Euler–Maruyama) with exact drifts $`b_k`$, estimated drifts $`\hat{b}_k`$ and algorithm laws
+route for Gaussian-increment chains $`x \mapsto \mathcal{N}(x + h_k g_k(x), 2h_k I)`$ (ULA,
+Euler–Maruyama) with exact drifts $`g_k`$, estimated drifts $`\hat{g}_k`$ and algorithm laws
 $`\nu_k`$:
-$`\mathrm{KL}(\nu_n \Vert \mu_n) \le \mathrm{KL}(\nu_0 \Vert \mu_0) + \sum_k (h_k/4) \int \Vert b_k - \hat{b}_k \Vert^2 \, d\nu_k`$,
+$`\mathrm{KL}(\nu_n \Vert \mu_n) \le \mathrm{KL}(\nu_0 \Vert \mu_0) + \sum_k (h_k/4) \int \Vert g_k - \hat{g}_k \Vert^2 \, d\nu_k`$,
 where $`\mu_k`$ are the exact chain's laws, followed by one Pinsker step (GI-1). For a constant
 drift error $`\Delta`$ and constant step $`h`$ from a common point mass the KL bound holds with
 equality, while the telescoped TV bound (the sum of the one-step bounds
@@ -281,12 +285,12 @@ Each row says which steps of a published analysis are formalised here and with w
 | [Li–Wei–Chen–Chi (2023)](https://arxiv.org/abs/2306.09251); [Li–Di–Gu (2024)](https://arxiv.org/abs/2410.14237) | deterministic (probability-flow, DDIM) samplers | a version of the §3.2 example, for every data law with finite second moment; a discrete-time analogue of Li–Di–Gu Thm 3.1 with an analytic one-step error, and its stationary-Gaussian setting with a clamp error acting over a horizon of order $`1/\varepsilon`$; the Wasserstein remark as a coupling bound; the TV convergence bounds not formalised | DF-3, DF-7, DF-9, DF-10 Verified |
 | [Nie et al. (2024)](https://arxiv.org/abs/2311.01410); [Ashiq et al. (2026)](https://arxiv.org/abs/2605.06831) | SDE versus ODE runs; dynamics between two modes | special cases of Nie et al.: de Bruijn for two heat-flow runs (Thm 3.1 with zero drift), KL invariance under bijections (component of Thm 3.2); the non-strict data-processing step behind Thm 3.3 (its strict inequality and the Cycle-SDE kernels not formalised); Ashiq et al. not formalised | KL-2, KL-4 Verified; the heat-flow de Bruijn identity holds under an explicit regularity hypothesis (used in KL-5 and PX-2) |
 | [Pidstrigach (2022)](https://arxiv.org/abs/2206.01018); [Li–Chen–Li (2024)](https://arxiv.org/abs/2401.04856); [Gu et al. (2023)](https://arxiv.org/abs/2310.02664) | reverse diffusion with the exact empirical score | memorisation for the discretised DDPM sampler with early stopping, related to Pidstrigach Cor. 1 and Li–Chen–Li Thm 4.3 (discrete time, parameters chosen existentially); the empirical score through Tweedie; continuous-time support results and Girsanov not formalised | DF-2, DF-1, SE-3 Verified |
-| [Lee–Shen–Tian (2021)](https://arxiv.org/abs/2010.03106) | proximal sampler with the restricted Gaussian oracle (RGO) | the RGO as Bayes reverse kernel and invariance (Lemma 1); Lemma 4's one-step bound for every coupling; the case $`\mu = 0`$ of Lemma 2; RGO implementations not formalised | PX-1, PX-5 Verified; the coupling bound has no named hypothesis (listed under PX-2) |
+| [Lee–Shen–Tian (2021)](https://arxiv.org/abs/2010.03106) | proximal sampler with the restricted Gaussian oracle (RGO) | the RGO as Bayes reverse kernel and invariance (Lemma 1); Lemma 4's one-step bound for every coupling; the case $`\mu = 0`$ of Lemma 2; RGO implementations not formalised | PX-1, PX-5 Verified; the coupling bound is proved with no named hypothesis (filed under PX-2, whose general form is Conditional) |
 | [Chen–Chewi–Salim–Wibisono (2022)](https://arxiv.org/abs/2202.06386); [Mitra–Wibisono (2025)](https://arxiv.org/abs/2410.10699) | proximal sampler, analysed along forward and backward heat flows | the KL part of Thm 3 of Chen–Chewi–Salim–Wibisono and the KL case of Mitra–Wibisono Thm 2; a version of Chen–Chewi–Salim–Wibisono Thm 2 by shifted composition; sharpness on Gaussian targets; Rényi, $`\chi^2`$ and other $`\Phi`$-divergences not formalised | PX-2 Conditional on the LSI; PX-3 … PX-6, EX-3 Verified |
 | [Altschuler–Chewi (2023)](https://arxiv.org/abs/2311.14520); [Pedrotti (2026)](https://arxiv.org/abs/2601.13259) | shifted composition | a version of Altschuler–Chewi Thm 3.2 for KL with $`L = 1`$; the special case $`\alpha = 0`$, $`L = 0`$, second law $`\pi`$ of Pedrotti Cor. 3.5; Rényi, Harnack and defective-curvature results not formalised | PX-5 Verified |
 | [Gross (1975)](https://doi.org/10.2307/2373688); [Holley–Stroock (1987)](https://doi.org/10.1007/BF01011161); [Bakry–Émery (1985)](https://www.numdam.org/item/SPS_1985__19__177_0/) | log-Sobolev inequalities for the target | the Gaussian log-Sobolev inequality, in functional and KL–Fisher form, proved along the heat flow; the bounded-perturbation lemma; strong convexity gives $`\mathrm{LSI}(1/\alpha)`$, by monotone transport in 1D and Prékopa–Leindler on `Fin d → ℝ`; the equivalence with hypercontractivity and the $`\Gamma_2`$ semigroup argument not formalised | KL-5, KL-6 Verified; used for PX-2, PX-4, PX-6 |
-| [Bogachev–Krylov–Röckner–Shaposhnikov (2015)](https://doi.org/10.1090/surv/207); [DiPerna–Lions (1989)](https://doi.org/10.1007/BF01393835) | weak Fokker–Planck and continuity equations | the Lipschitz case of Fokker–Planck uniqueness (Ch. 9), with existence, without SDE theory; a version of DiPerna–Lions Thm II.2 for autonomous Sobolev velocities and probability densities; dissipative non-Lipschitz drifts and time-dependent velocities not formalised | FL-6 Verified; the DiPerna–Lions results have no named hypothesis (listed under FL-5, Conditional overall) |
-| [Wibisono (2018)](https://arxiv.org/abs/1802.08089) | ULA; Langevin dynamics as a KL gradient flow; the forward method | the special case $`\mathcal{N}(0, 1)`$ of Example 2; the Example 4 recursion, with no fixed step a KL descent for all laws; KL decay along OU; SLA and the $`W_2`$ lemmas not formalised | Counterexamples to the general claims that ULA leaves its target invariant (CE-03) and that one fixed step size makes the ideal-velocity step a KL descent for all laws (CE-08); FL-4 Conditional (OU decay with no named hypothesis) |
+| [Bogachev–Krylov–Röckner–Shaposhnikov (2015)](https://doi.org/10.1090/surv/207); [DiPerna–Lions (1989)](https://doi.org/10.1007/BF01393835) | weak Fokker–Planck and continuity equations | the Lipschitz case of Fokker–Planck uniqueness (Ch. 9), with existence, without SDE theory; a version of DiPerna–Lions Thm II.2 for autonomous Sobolev velocities and probability densities; dissipative non-Lipschitz drifts and time-dependent velocities not formalised | FL-6 Verified; the DiPerna–Lions results are proved with no named hypothesis (filed under FL-5, whose general form is Conditional) |
+| [Wibisono (2018)](https://arxiv.org/abs/1802.08089) | ULA; Langevin dynamics as a KL gradient flow; the forward method | the special case $`\mathcal{N}(0, 1)`$ of Example 2; the Example 4 recursion, with no fixed step a KL descent for all laws; KL decay along OU; SLA and the $`W_2`$ lemmas not formalised | CE-03 Counterexample: for the target $`\mathcal{N}(0, 1)`$, ULA with a step $`h \gt 0`$ does not leave it invariant; CE-08 Counterexample: no fixed step makes the ideal-velocity step a KL descent for all laws; the OU decay is proved with no named hypothesis (filed under FL-4, whose general form is Conditional) |
 | SVGD: [Liu–Wang (2016)](https://arxiv.org/abs/1608.04471); PFG: [Dong–Wang–Lin–Zhang (2023)](https://arxiv.org/abs/2211.13954) | deterministic transport by a regularised functional gradient; particle updates | PFG Prop. 1, the KL dissipation identity, Thm 1 with its constants ([A3], [A4] as hypotheses), App. A.6 in 1D; SVGD with finite feature kernels (Liu–Wang Eqs. (6), (8)) as a case of PFG; PFG Prop. 2 and RKHS theory not formalised | SE-1, SE-2, FL-1 … FL-3, DT-1, PT-1, EX-2 Verified; FL-4 Conditional |
 | rdMC: [Huang–Dong–Hao–Ma–Zhang (2024)](https://arxiv.org/abs/2307.02037); RS-DMC: [Huang–Zou–Dong–Ma–Zhang (2024)](https://arxiv.org/abs/2401.06325) | reverse diffusion with Monte Carlo posterior-mean scores from an inner sampler | the OU posterior score (rdMC Lemma 1, RS-DMC Lemma 2.1); Monte Carlo score error and inner-sampler bias, propagated by the KL chain rule; a discrete-time KL split of the output; inner ULA and the recursive estimator not formalised | SE-3, SE-4, GI-2, DF-1, DF-5 Verified |
 | SPS: [Huang–Zou–Dong–Ma–Zhang (2024)](https://arxiv.org/abs/2405.16734); RTK: [Huang–Zou–Dong–Zhang–Ma–Zhang (2024)](https://arxiv.org/abs/2405.16387) | outer chain of exact Bayes kernels (reverse transition kernel; restricted Gaussian oracle) sampled by inner MCMC | reverse kernels and invariance; per-step inner KL errors summed by the chain rule, then one Pinsker step (RTK Lemma 3.2, SPS Lemma B.5); the exact proximal rate under an LSI; invariance of MALA; mixing of the inner MALA, ULD and SGLD not formalised | KR-2, PX-1, KL-1, KL-2, MH-1 Verified; PX-2 Conditional |
@@ -303,9 +307,11 @@ Step-by-step decomposition of each work into these moves:
   hypotheses. When a theorem relies on unproved mathematics (a log-Sobolev inequality, PDE
   uniqueness for a general drift), that ingredient is a named `Prop` in its statement and the
   result is marked *Conditional*.
-- **Non-vacuity.** For every registry row, a module in `FormalizeSampling/Audit/` applies the
-  theorem to a concrete non-degenerate instance and discharges all of its hypotheses inside
-  Lean, so no headline theorem holds only because its assumptions are contradictory.
+- **Non-vacuity.** For every registry row, a module in `FormalizeSampling/Audit/` applies
+  theorems of the row, or library corollaries whose proofs apply them, to explicit instances
+  and discharges every hypothesis inside Lean, so no row holds only because its assumptions are
+  contradictory. The guarantee is per row, not per declaration: some cited declarations are
+  exercised only through the theorems that use them, and a few only on stationary instances.
 - **Encoding.** Statements are checked for encoding pitfalls, such as a real-valued
   `(klDiv …).toReal` hiding an infinite divergence, or an error averaged under the wrong law.
 - **Fidelity.** Each statement is compared with the literature and documented with its scope.
@@ -438,6 +444,29 @@ example {κ η : ℕ → Kernel α α} [∀ n, IsMarkovKernel (κ n)] [∀ n, Is
   have hKL0 : klDiv (ν 0) (μ 0) ≠ ⊤ := by simp [h0]
   simpa [h0] using ErrorPropagation.tvSup_chain_le_sqrt_klDiv_add_sum
     hμ hν hKL0 (c := fun _ => c) (fun _ => hc) h n
+```
+
+A published theorem is applied the same way. The next example, the KL rate of the proximal
+sampler for strongly log-concave targets (PX-6), needs the full `import FormalizeSampling`, since
+`FormalizeSampling.Core` does not include the samplers. Its target `targetPi`, kernel
+`proxKernelPi` and potential `gaussPotentialPi` are in the namespaces `ProximalPi` and
+`ProximalSharpPi`.
+
+```lean
+import FormalizeSampling
+
+open MeasureTheory ProbabilityTheory InformationTheory FormalizeSampling ProximalPi ProximalSharpPi
+
+-- PX-6: if `f - α|x|²/2` is convex (`gaussPotentialPi α x = α ∑ᵢ xᵢ² / 2`), the proximal
+-- sampler with step `η` contracts the KL to `targetPi f ∝ e^{-f}` by `(1 + α η)²` per step
+example {d : ℕ} {f : (Fin d → ℝ) → ℝ} {α η : ℝ} (hα : 0 < α) (hη : 0 < η)
+    (hf : ConvexOn ℝ Set.univ fun x => f x - gaussPotentialPi α x)
+    (ρ : ℕ → Measure (Fin d → ℝ)) [IsProbabilityMeasure (ρ 0)]
+    (hρ : ∀ k, ρ (k + 1) = proxKernelPi f η ∘ₘ ρ k) (h0 : klDiv (ρ 0) (targetPi f) ≠ ⊤) (k : ℕ) :
+    (klDiv (ρ k) (targetPi f)).toReal
+      ≤ (klDiv (ρ 0) (targetPi f)).toReal / (1 + α * η) ^ (2 * k) :=
+  (ProximalStronglyLogConcaveGeneralPi.toReal_klDiv_iteratePi_le_sq_of_stronglyLogConcave
+    hα hη hf ρ hρ h0 k).2.2
 ```
 
 ## Layout
