@@ -40,7 +40,8 @@ a nonzero initialisation allowance. The output lower bound does not remove it, s
 quadratic total-error scaling and that ratio limit require additional initialisation control.
 
 Relation to the literature: Jiao–Zhou–Li (2025, arXiv:2510.27562, Thm 2) prove an output lower
-bound of order `d/N²` for Gaussian data with the oracle score on their schedule (including the
+bound of order `d/N²` for a family of isotropic Gaussian data laws `N(0, λ I)`, with the oracle
+score on their schedule (including the
 variance `β/α²`).
 
 ## Main results

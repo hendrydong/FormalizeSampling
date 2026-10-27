@@ -50,8 +50,9 @@ the output KL is at most the path KL (`DiffusionPath.klDiv_output_le_path`).
   grid gives `KL(p_1 ‖ q_1) ≤ ε` (resp. `TV(p_1, q_1) ≤ ε`).
 * `explicit_geomGrid_params`, `klDiv_output_le_geomGrid_steps`, `tvSup_output_le_geomGrid_steps`:
   an explicit step count. For every data law with finite second moment `M₂`, `u_1 > 0`, `ε > 0`
-  and every learned score, an explicit geometric grid with
-  `N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2` steps gives `KL(p_1 ‖ q_1) ≤ ε + scoreErr`, where `L`
+  and every measurable learned score whose squared error is integrable under each `p_k`, an
+  explicit geometric grid with last index `N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2` (`N - 1`
+  sampler steps) gives `KL(p_1 ‖ q_1) ≤ ε + scoreErr`, where `L`
   depends on `d`, `M₂`, `ε` and `u_1` only through a logarithm; the TV form by Pinsker.
 
 ## Not proved here
@@ -700,9 +701,9 @@ moment `M₂ = ∫ |x|² dμ` (no density assumed), `u_1 > 0` and `ε > 0`. Set 
 `A = (d (v - 1 - log v) + M₂ / (1 + u_1)) / 2`, `L = log (max 1 (2 (1 + u_1) A / (ε u_1)))`,
 `η = min 1 (ε / ((d + 1) (L + 2)))` and `N = ⌈L / log (1 + η)⌉₊ + 1`. Then
 `N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2`, and on the geometric grid `geomGrid u_1 (1 + η)`
-(`u_k = u_1 (1 + η)^{k-1}`) the DDPM sampler (`σ_k² = β_k / α_k²`, started at `N(0, I)`, `N`
-steps) satisfies, for every learned score `s` with each `s_k` measurable and each score error
-`∑ᵢ (s_k(y)ᵢ - ∂ᵢ log p_k(y))²` integrable under `p_k` (`2 ≤ k ≤ N`),
+(`u_k = u_1 (1 + η)^{k-1}`) the DDPM sampler (`σ_k² = β_k / α_k²`, started at `N(0, I)`, `N - 1`
+reverse steps `k = N, …, 2`) satisfies, for every learned score `s` with each `s_k` measurable
+and each score error `∑ᵢ (s_k(y)ᵢ - ∂ᵢ log p_k(y))²` integrable under `p_k` (`2 ≤ k ≤ N`),
 `KL(p_1 ‖ q_1) ≤ ε + ∑_{k=2}^N (β_k / 2) ∫ |s_k - ∇ log p_k|² dp_k` (`scoreErr`). Here `p_k` is
 the forward law at `t_k`, so `p_1` is the data law smoothed up to `t_1 = log (1 + u_1) / 2`, and
 `q_1` is the sampler output. `L` depends on `d`, `M₂`, `ε` and `u_1` only through a logarithm.

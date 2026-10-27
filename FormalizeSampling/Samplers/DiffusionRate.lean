@@ -46,7 +46,7 @@ grid (`sum_lintegral_klDiv_revKernel_geomGrid_dirac`). On the geometric grid
 
 Relation to the literature: Benton–De Bortoli–Doucet–Deligiannidis (2024, arXiv:2308.03686, §4)
 point out that the path KL is of the order of the step size in the worst case, for instance for
-point-mass data; Chen–Lee–Lu (2023, arXiv:2211.01916, App. B) choose geometric steps by a
+point-mass data; Chen–Lee–Lu (2023, arXiv:2211.01916, App. B) justify geometric steps by a
 convexity argument in log-time; Sun–Poor–Zhang (2026, arXiv:2601.13602, Thm 3) give a path-KL
 lower bound for the reverse SDE in which Gaussian data is the extremal case.
 

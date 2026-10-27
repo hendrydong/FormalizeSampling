@@ -39,8 +39,8 @@ $`u_k = e^{2t_k} - 1`$.
   and score errors; the discretisation term is linear in the dimension, as in Benton–De
   Bortoli–Doucet–Deligiannidis (2024). The proof uses Tweedie's formula, an exact entropy identity
   for each reverse step, de Bruijn's identity and the monotonicity of Fisher information. The number
-  of steps is explicit: for every $`\varepsilon \gt 0`$ a geometric grid with
-  $`N \le 2(d + 1)L(L + 2)/\varepsilon + 2L + 2`$ steps gives
+  of steps is explicit: for every $`\varepsilon \gt 0`$ a geometric grid with last index
+  $`N \le 2(d + 1)L(L + 2)/\varepsilon + 2L + 2`$ (so $`N - 1`$ sampler steps) gives
   $`\mathrm{KL}(p_\delta \Vert \text{output}) \le \varepsilon`$ plus the score-error term, where
   $`L`$ depends on $`d`$, $`M`$, $`\varepsilon`$ and $`\delta`$ only through a logarithm.
 - **Memorisation (DF-2).** With the exact score of its training set, a diffusion model reproduces
@@ -87,7 +87,7 @@ $`u_k = e^{2t_k} - 1`$.
   a uniform grid over a fixed interval, a lower bound of order $`1/N`$ is proved for data with
   $`M \le d`$ (DF-4, DF-5); for a point mass at the origin the sum is explicit and, among grids with
   the same $`N`$, $`u_1`$ and $`u_N`$, the geometric grid minimises it (Chen–Lee–Lu 2023, App. B,
-  choose geometric steps by a convexity argument in log-time). Sun–Poor–Zhang (2026, Thm 3) give a
+  justify geometric steps by a convexity argument in log-time). Sun–Poor–Zhang (2026, Thm 3) give a
   lower bound on the path KL of a related continuous-time sampler, with Gaussian data as the
   extremal case. The faster decay of the output KL seen numerically (`../showcase/ddpm_rate.py`,
   data with $`M \le d`$) cannot be recovered by bounding the full KL along the true reverse chain
@@ -111,8 +111,8 @@ $`u_k = e^{2t_k} - 1`$.
   $`d((e^{2h} - 1)^2 + (\varepsilon/(1 - \varepsilon))^2)/4`$ whenever
   $`(v - 1)e^{-2(2T - t_1)}s_1 \le \varepsilon \lt 1`$; its $`\varepsilon^2`$ initialisation term
   likewise does not vanish as $`h \to 0`$ at fixed $`T`$. With $`\sigma^2 = \beta`$ the sampler is
-  exact for $`v = 1`$. Jiao–Zhou–Li (2025, Thm 2) prove an output lower bound of order $`d/N^2`$ for
-  Gaussian data on their schedule.
+  exact for $`v = 1`$. Jiao–Zhou–Li (2025, Thm 2) prove an output lower bound of order $`d/N^2`$ for a
+  family of isotropic Gaussian data laws on their schedule.
 - **Deterministic samplers in transport distance (DF-9).** If the exact-score steps are Lipschitz, a
   uniformly $`\varepsilon`$-accurate score keeps the deterministic output within an explicit
   distance of the exact-score deterministic output under a coupling ($`W_\infty`$, $`W_2`$ bounds);

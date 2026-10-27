@@ -185,7 +185,7 @@ def main() -> None:
     ax.text(
         K_MAX,
         c - 0.045,
-        r"$(1+\alpha\eta)^{-1}$: forward step alone under the LSI (PX-2)",
+        r"$(1+\alpha\eta)^{-1}$: forward step alone (PX-2)",
         color=INK2,
         ha="right",
     )

@@ -820,6 +820,8 @@ class ContractTests(unittest.TestCase):
             "README.md": self.readme() + "\nA novel bound.\n",
             "docs/notes.md": "The exact sum, rather than the\npaper's bound.\n",
             "experiments/README.md": "To our knowledge this is stated here only.\n",
+            "showcase/README.md": "> The exact sum, rather than\n> the paper's bound.\n",
+            "showcase/demo.py": '"""A novel figure."""\n',
         }
         module = MODULE.replace("/-! Example module. -/", "/-! Example; we have NOT found it. -/")
         code, output = self.run_checker(module, {}, write_index=True, docs=banned)
@@ -827,6 +829,8 @@ class ContractTests(unittest.TestCase):
         self.assertIn("Banned phrase 'novel': README.md:", output)
         self.assertIn("Banned phrase 'rather than the paper': docs/notes.md:1", output)
         self.assertIn("Banned phrase 'To our knowledge': experiments/README.md:1", output)
+        self.assertIn("Banned phrase 'rather than > the paper': showcase/README.md:1", output)
+        self.assertIn("Banned phrase 'novel': showcase/demo.py:1", output)
         self.assertIn(
             "Banned phrase 'we have NOT found': FormalizeSampling/Foundations/Example.lean:5",
             output,

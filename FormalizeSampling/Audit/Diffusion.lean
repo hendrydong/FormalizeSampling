@@ -36,8 +36,9 @@ The general statements live in `Samplers/DiffusionMain.lean` (namespace
   moment, exact score, `u_1 > 0`, `ε > 0`: some geometric grid gives `KL(p_1 ‖ q_1) ≤ ε`
   (resp. `TV(p_1, q_1) ≤ ε`).
 * `explicit_geomGrid_params`, `klDiv_output_le_geomGrid_steps`, `tvSup_output_le_geomGrid_steps`:
-  the same with `r` and `N` explicit, `N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2`, for every
-  learned score (the score error is added to the bound).
+  the same with `r` and `N` explicit, `N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2` for KL (for TV the
+  construction with `2 ε²` in place of `ε`, `N ≤ (d + 1) L (L + 2) / ε² + 2 L + 2`), for every
+  measurable learned score with integrable squared error (the score error is added to the bound).
 
 Proved here:
 
@@ -139,10 +140,10 @@ theorem integral_sqNorm_twoPoint {d : ℕ} (a b : Fin d → ℝ) :
 `A = ((d + 1) (v - 1 - log v) + M₂ / (1 + u_1)) / 2`,
 `L = log (max 1 (2 (1 + u_1) A / (ε u_1)))`, `η = min 1 (ε / ((d + 2) (L + 2)))` and
 `N = ⌈L / log (1 + η)⌉₊ + 1`. Then `N ≤ 2 (d + 2) L (L + 2) / ε + 2 L + 2` and the DDPM sampler
-with `N` steps on `geomGrid u_1 (1 + η)` gives `KL(p_1 ‖ q_1) ≤ ε`. This is
-`klDiv_output_le_geomGrid_steps` in dimension `d + 1` with every hypothesis discharged: finite
-second moment (`integrable_sqNorm_twoPoint`, value `integral_sqNorm_twoPoint`), measurability and
-integrable error of the exact score (`measurable_exactScore`, `integrable_exactScore_err`), and
+with grid index `N` (`N - 1` reverse steps) on `geomGrid u_1 (1 + η)` gives `KL(p_1 ‖ q_1) ≤ ε`.
+This is `klDiv_output_le_geomGrid_steps` in dimension `d + 1` with every hypothesis discharged:
+finite second moment (`integrable_sqNorm_twoPoint`, value `integral_sqNorm_twoPoint`), measurability
+and integrable error of the exact score (`measurable_exactScore`, `integrable_exactScore_err`), and
 zero score error (`scoreErr_exactScore`). -/
 theorem twoPoint_klDiv_output_le_steps {d : ℕ} (a b : Fin (d + 1) → ℝ) {u1 ε : ℝ}
     (hu1 : 0 < u1) (hε : 0 < ε) :

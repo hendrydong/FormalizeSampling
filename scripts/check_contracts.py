@@ -28,7 +28,7 @@ docs/literature.md; docs/results.md has one bullet per registry row, in registry
 row's title and status mark; registry rows start with a bold title, cite documented theorems and
 list their modules; relative links and their anchors resolve. No phrase of BANNED_PHRASES (the
 wording rules) occurs in these files, in the other docs/*.md files except the declaration index,
-or in the Lean sources.
+in the Lean sources or in the Python illustrations.
 """
 
 from __future__ import annotations
@@ -88,7 +88,8 @@ CERTIFIED = {"Verified", "Conditional", "Counterexample"}
 STATUS_MARK = re.compile(rf"\*({'|'.join(STATUSES)})\*")
 # Phrases that the wording rules exclude from the public text and the Lean sources (docstrings and
 # comments): a cited work is credited only for what is formalised, with no priority claims.
-# Matched case-insensitively; every space may be a line break.
+# Matched case-insensitively; every space may be a line break, also one that continues a `--`
+# comment or a `>` quote.
 BANNED_PHRASES = (
     "we have not found",
     "not found before",
@@ -99,8 +100,9 @@ BANNED_PHRASES = (
     "weaker than the paper",
     "novel",
 )
+SEPARATOR = r"\s+(?:(?:--|>)\s+)?"
 BANNED = re.compile(
-    "|".join(r"\s+".join(map(re.escape, phrase.split())) for phrase in BANNED_PHRASES), re.I
+    "|".join(SEPARATOR.join(map(re.escape, phrase.split())) for phrase in BANNED_PHRASES), re.I
 )
 COLUMNS = 6  # ID | Status | Statement | Lean declarations | Assumptions and scope | Module
 FORBIDDEN = re.compile(r"\b(sorry|admit|axiom|native_decide)\b")
@@ -1098,7 +1100,7 @@ def main() -> int:
         for path in sorted(ROOT.joinpath("docs").glob("*.md"))
         if path != ROOT / INDEX
     }
-    errors += banned_phrase_errors({**others, **texts, **sources})
+    errors += banned_phrase_errors({**others, **texts, **sources, **scripts})
     if README in texts:
         readme = texts[README]
         lines = sum(len(source.splitlines()) for source in sources.values())

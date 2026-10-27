@@ -3,7 +3,7 @@ version = "0.1.0"
 defaultTargets = ["FormalizeSampling"]
 # A project that requires this package at a tagged commit downloads the prebuilt library from
 # the GitHub release of that tag (.github/workflows/release.yml, Linux x86_64 only); on other
-# platforms, or at an untagged commit, Lake builds the library from source.
+# platforms, or at an untagged commit, Lake logs a warning and builds the library from source.
 preferReleaseBuild = true
 releaseRepo = "https://github.com/hendrydong/FormalizeSampling"
 

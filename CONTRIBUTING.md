@@ -30,8 +30,9 @@
   only as an example.
 - Text about a published work credits it only for what is formalised ("proves a version of
   Theorem X"). `scripts/check_contracts.py` rejects the phrases of its `BANNED_PHRASES` list, in
-  any case, in the README, this file, `docs/` (except the generated index), `showcase/README.md`,
-  `experiments/README.md` and the Lean sources.
+  any case, in the README, this file, the Markdown files directly in `docs/` (except the generated
+  index), `showcase/README.md`, `experiments/README.md`, the Lean sources and the Python
+  illustrations in `showcase/` and `experiments/`.
 - Python code in `experiments/` and `showcase/` gives exact or numerical illustrations; it
   never replaces a Lean proof. Python code passes `ruff check` and `ruff format --check`, with
   the version pinned in `requirements-dev.txt`.

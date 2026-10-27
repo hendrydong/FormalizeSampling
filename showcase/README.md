@@ -299,7 +299,8 @@ $`\mathrm{KL}(\rho_k \Vert \pi)/\mathrm{KL}(\rho_0 \Vert \pi)`$ (dots: Gaussian 
 perturbed target) with the PX-3 and PX-4 bounds. Panel (c) shows the per-step factor
 $`\mathrm{KL}_k / \mathrm{KL}_{k-1}`$ with $`(1 + \alpha\eta)^{-2} = 0.444`$, the Holley–Stroock
 $`(1 + \alpha'\eta)^{-2} = 0.713`$ ($`\alpha' = \alpha e^{-(b-a)} = 0.368`$) and the factor
-$`(1 + \alpha\eta)^{-1} = 0.667`$ that the forward step alone gives under the LSI (PX-2).
+$`(1 + \alpha\eta)^{-1} = 0.667`$ that the forward step alone gives under the LSI and
+`HeatFlowRegular` (PX-2).
 
 **Which theorem.** PX-3, `ProximalGaussianUnconditional.toReal_klDiv_iterate_le_sq_of_ne_top`:
 $`\mathrm{KL}(\rho_k \Vert \pi) \le \mathrm{KL}(\rho_0 \Vert \pi)/(1 + \alpha\eta)^{2k}`$ for the
@@ -468,7 +469,7 @@ $`v = 1`$. This script covers $`v \le 1`$; the next Gaussian example includes th
 extension. Non-isotropic output rates are not covered by these Lean results.
 
 **Prior work.** Jiao, Zhou and Li (arXiv:2510.27562, Thm 2) prove an output lower bound of order
-$`d/N^2`$ for Gaussian data on their schedule.
+$`d/N^2`$ for a family of isotropic Gaussian data laws on their schedule.
 
 ## 15. Deterministic samplers: close in transport, far in TV (`ode_lipschitz.py` → `figures/ode_lipschitz.png`)
 
