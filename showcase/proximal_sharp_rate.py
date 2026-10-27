@@ -183,7 +183,11 @@ def main() -> None:
         ha="right",
     )
     ax.text(
-        K_MAX, c - 0.045, r"$(1+\alpha\eta)^{-1}$: one-step LSI rate (PX-2)", color=INK2, ha="right"
+        K_MAX,
+        c - 0.045,
+        r"$(1+\alpha\eta)^{-1}$: forward step alone under the LSI (PX-2)",
+        color=INK2,
+        ha="right",
     )
     ax.set_ylim(0, 0.8)
     ax.set_xlabel("iteration k")

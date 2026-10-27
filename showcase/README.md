@@ -298,8 +298,8 @@ $`\mathcal{N}(0, 0.05)`$ and $`\mathcal{N}(-2, 0.1)`$. Panel (b) shows
 $`\mathrm{KL}(\rho_k \Vert \pi)/\mathrm{KL}(\rho_0 \Vert \pi)`$ (dots: Gaussian target; lines:
 perturbed target) with the PX-3 and PX-4 bounds. Panel (c) shows the per-step factor
 $`\mathrm{KL}_k / \mathrm{KL}_{k-1}`$ with $`(1 + \alpha\eta)^{-2} = 0.444`$, the Holley–Stroock
-$`(1 + \alpha'\eta)^{-2} = 0.713`$ ($`\alpha' = \alpha e^{-(b-a)} = 0.368`$) and the non-sharp
-one-step LSI factor $`(1 + \alpha\eta)^{-1} = 0.667`$ of PX-2.
+$`(1 + \alpha'\eta)^{-2} = 0.713`$ ($`\alpha' = \alpha e^{-(b-a)} = 0.368`$) and the factor
+$`(1 + \alpha\eta)^{-1} = 0.667`$ that the forward step alone gives under the LSI (PX-2).
 
 **Which theorem.** PX-3, `ProximalGaussianUnconditional.toReal_klDiv_iterate_le_sq_of_ne_top`:
 $`\mathrm{KL}(\rho_k \Vert \pi) \le \mathrm{KL}(\rho_0 \Vert \pi)/(1 + \alpha\eta)^{2k}`$ for the
@@ -323,8 +323,8 @@ Gaussian 0.444 and well below the factor 0.713 of the PX-4 bound (Holley–Stroo
 
 **Caveats.** As the registry says, $`\alpha e^{-(b-a)}`$ is not the optimal constant in general; in
 this example the observed contraction is much faster than the PX-4 bound. The symmetric start
-$`\mathcal{N}(0, 0.05)`$ excites only even modes and decays faster (factor 0.17). Computations are on a grid (step 0.01 on [-14, 14]); KL values
-below 1e-12 are rounding noise and are not plotted.
+$`\mathcal{N}(0, 0.05)`$ excites only even modes and decays faster (factor 0.17). Computations are
+on a grid (step 0.01 on [-14, 14]); KL values below 1e-12 are rounding noise and are not plotted.
 
 ## 9. Langevin (OU) KL decay and the Gaussian log-Sobolev inequality (`ou_decay.py` → `figures/ou_decay.png`)
 
@@ -468,8 +468,7 @@ $`v = 1`$. This script covers $`v \le 1`$; the next Gaussian example includes th
 extension. Non-isotropic output rates are not covered by these Lean results.
 
 **Prior work.** Jiao, Zhou and Li (arXiv:2510.27562, Thm 2) prove an output lower bound of order
-$`d/N^2`$ for $`\mathcal{N}(0, \lambda I)`$ data with $`\lambda \ge 2`$ on their schedule; DF-8
-covers $`v = 1`$ on a uniform grid over a fixed interval, with explicit constants on both sides.
+$`d/N^2`$ for Gaussian data on their schedule.
 
 ## 15. Deterministic samplers: close in transport, far in TV (`ode_lipschitz.py` → `figures/ode_lipschitz.png`)
 
@@ -516,9 +515,10 @@ discretisation excess dominates that allowance.
 
 ## 17. Two modes: a tiny score error and a third mode in the deterministic output (`ode_third_mode.py` → `figures/ode_third_mode.png`)
 
-**What you see.** The data is $`\tfrac{1}{2} \mathcal{N}(-2, \tfrac{1}{4}) + \tfrac{1}{2} \mathcal{N}(2, \tfrac{1}{4})`$,
-so the exact score $`s_t(x) = (-x + m_t \tanh(m_t x/v_t))/v_t`$ is explicit. At every noise level
-the score is perturbed by $`e(x) = -\frac{\lambda h}{2\pi} \sin(2\pi x/h)`$ for
+**What you see.** The data is
+$`\tfrac{1}{2} \mathcal{N}(-2, \tfrac{1}{4}) + \tfrac{1}{2} \mathcal{N}(2, \tfrac{1}{4})`$, so the
+exact score $`s_t(x) = (-x + m_t \tanh(m_t x/v_t))/v_t`$ is explicit. At every noise level the score
+is perturbed by $`e(x) = -\frac{\lambda h}{2\pi} \sin(2\pi x/h)`$ for
 $`\lvert x \rvert \le h/2`$ and $`e(x) = 0`$ otherwise, with $`h = 0.6`$ and $`\lambda = 0.7`$: the
 largest error is 0.067, and in panel (a) the two scores are hard to tell apart. Both samplers run
 with this score from $`\mathcal{N}(0, 1)`$ at $`T = 10`$ down to $`\delta = 0.01`$. (b) DDPM puts
@@ -529,9 +529,9 @@ TV bound: the start $`\mathcal{N}(0, 1)`$ differs from $`p_T`$, so a guarantee a
 initialisation term and, for finite-step DDPM, discretisation control. (c) The probability-flow ODE
 puts 23.5% there, in a third mode at 0, and its TV to the target is 0.23. (d) The mechanism. While
 the noised law is close to $`\mathcal{N}(0, 1)`$ the exact velocity is tiny, and $`e`$ pulls the
-samples that start in $`\lvert x \rvert \lt h/2`$ onto the midpoint. Near the end the exact flow pushes away
-from the midpoint, but these samples are too close to it to reach either mode in time. DDPM's
-injected noise moves samples off the midpoint, so the error is forgotten.
+samples that start in $`\lvert x \rvert \lt h/2`$ onto the midpoint. Near the end the exact flow
+pushes away from the midpoint, but these samples are too close to it to reach either mode in time.
+DDPM's injected noise moves samples off the midpoint, so the error is forgotten.
 
 **Prior work.** The mechanism is known. Li, Di and Gu (arXiv:2410.14237, Thm 3.1) use that the
 probability-flow velocity vanishes for Gaussian data, so that the flow does not correct a uniformly
