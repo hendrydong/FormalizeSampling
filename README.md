@@ -352,21 +352,24 @@ To use the framework in your own analysis:
   inner KL or coupling guarantees to outer-chain error, under explicit moment assumptions.
 
 To depend on the library from another Lake project, add it to that project's `lakefile.toml`,
-pinned to a commit:
+pinned to a release tag:
 
 ```toml
 [[require]]
 name = "formalize-sampling"
 git = "https://github.com/hendrydong/FormalizeSampling"
-rev = "<commit hash>"
+rev = "v0.1.0"
 ```
 
 or, in a `lakefile.lean`,
 
 ```lean
 require «formalize-sampling» from git
-  "https://github.com/hendrydong/FormalizeSampling" @ "<commit hash>"
+  "https://github.com/hendrydong/FormalizeSampling" @ "v0.1.0"
 ```
+
+On Linux x86_64, Lake then downloads the prebuilt library from the GitHub release of that tag;
+other platforms build it from source.
 
 The project must use Lean `v4.35.0` (`leanprover/lean4:v4.35.0` in its `lean-toolchain`). The
 library brings Mathlib `v4.35.0`; a project that also requires Mathlib directly must pin the
@@ -375,7 +378,7 @@ same version (`rev = "v4.35.0"`). Then run
 ```bash
 lake update formalize-sampling   # record the library and Mathlib in lake-manifest.json
 lake exe cache get               # download prebuilt Mathlib
-lake build                       # the first build compiles the imported FormalizeSampling modules
+lake build                       # compiles the imported modules, or downloads them on Linux x86_64
 ```
 
 `import FormalizeSampling.Core` gives the sampler-independent core (`Foundations`, `Identities`,

@@ -1,0 +1,83 @@
+name: Release prebuilt library
+
+# Pushing a tag `v*` builds the library at that tag and attaches Lake's build archive to the
+# GitHub release of the tag. A Lake project that requires FormalizeSampling at the tagged commit
+# then downloads the archive instead of compiling the library (`preferReleaseBuild` and
+# `releaseRepo` in lakefile.toml). The archive is for Linux x86_64; other platforms build from
+# source.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and release, for example v0.1.0"
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      # Lake's default `buildArchive`: `<package name>-<System.Platform.target>.tar.gz`.
+      ARCHIVE: .lake/formalize-sampling-x86_64-unknown-linux-gnu.tar.gz
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+          persist-credentials: false
+      # As in lean.yml: the Mathlib build plus the archive can exhaust the runner's disk.
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+      # No GitHub cache, so the build directory holds exactly the modules of this tag.
+      - name: Build pinned Lean and Mathlib
+        uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865
+        with:
+          auto-config: "false"
+          build: "true"
+          test: "false"
+          lint: "false"
+          use-mathlib-cache: "true"
+          use-github-cache: "false"
+      - name: Audit every project declaration for axioms and resolve the names cited in the docs
+        run: lake env lean scripts/AxiomAudit.lean
+      - name: Pack the build directory into Lake's release archive
+        run: |
+          lake pack
+          ls -l .lake/*.tar.gz
+          test -f "$ARCHIVE"
+          tar -tzf "$ARCHIVE" > "$RUNNER_TEMP/archive-contents.txt"
+          grep -qx './lib/lean/FormalizeSampling.olean' "$RUNNER_TEMP/archive-contents.txt"
+          grep -qx './lib/lean/FormalizeSampling/Core.olean' "$RUNNER_TEMP/archive-contents.txt"
+      - name: Attach the archive to the GitHub release of the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$ARCHIVE" --clobber
+          else
+            printf '%s\n' \
+              "Prebuilt library for Linux x86_64, built with $(cat lean-toolchain)." \
+              "" \
+              "A Lake project that requires FormalizeSampling at \`$TAG\` downloads it" \
+              "automatically; on other platforms Lake builds the library from source. See" \
+              "[Using FormalizeSampling](https://github.com/$GH_REPO#using-formalizesampling)." \
+              > "$RUNNER_TEMP/notes.md"
+            gh release create "$TAG" "$ARCHIVE" --verify-tag --title "$TAG" \
+              --notes-file "$RUNNER_TEMP/notes.md"
+          fi

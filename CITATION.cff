@@ -3,6 +3,8 @@ message: "If you use this library, please cite it as below."
 title: "FormalizeSampling"
 abstract: "Machine-checked versions of published convergence theorems for sampling algorithms, in Lean 4 and Mathlib, and the framework they are built from."
 type: software
+version: 0.1.0
+date-released: 2026-10-27
 authors:
   - family-names: Dong
     given-names: Hanze

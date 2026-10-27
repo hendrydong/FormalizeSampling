@@ -64,6 +64,23 @@ dynamics", distances and divergences). In Lean:
   files without the suffix (flow, diffusion) are also on `Fin d → ℝ`. New results should be
   stated on `Fin d → ℝ`.
 
+## Releases
+
+A release is a version tag such as `v0.1.0` on a commit of `main` whose CI run passed. Before
+tagging, set `version` in `lakefile.toml`, `version` and `date-released` in `CITATION.cff` and the
+tag in the README's [Using FormalizeSampling](README.md#using-formalizesampling), then push the tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The tag runs `.github/workflows/release.yml`, which builds the library from a clean tree and
+attaches Lake's build archive (`formalize-sampling-x86_64-unknown-linux-gnu.tar.gz`, from
+`lake pack`) to the GitHub release of the tag, creating the release if needed. A Lake project that
+requires the library at that tag then downloads the archive on Linux x86_64 instead of compiling
+the library. To rebuild the archive of an existing tag, run the workflow by hand with that tag.
+
 ## Statuses
 
 See [README, Statuses](README.md#statuses).
