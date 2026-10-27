@@ -88,7 +88,7 @@ Status: **Verified** (all hypotheses are explicit regularity or integrability co
   is `∞ - ∞` mathematically and `0 - 0` under Lean's junk convention for the Bochner integral,
   while the left-hand side is finite for compactly supported `f`.
 * Stein integration by parts for every `f ∈ F` (through `Admissible`), with boundary terms
-  controlled by integrability under `p` rather than by the [A1] tail condition under `p⋆`.
+  controlled by integrability under `p`.
 * `p > 0` everywhere and differentiable; `H` symmetric positive definite and `x`-independent.
 
 ## What is NOT proved here

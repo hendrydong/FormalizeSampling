@@ -83,11 +83,11 @@ $`u_k = e^{2t_k} - 1`$.
   a uniform grid over a fixed interval, a lower bound of order $`1/N`$ is proved for data with
   $`M \le d`$ (DF-4, DF-5); for a point mass at the origin the sum is explicit and, among grids with
   the same $`N`$, $`u_1`$ and $`u_N`$, the geometric grid minimises it (Chen–Lee–Lu 2023, App. B,
-  show by a convexity argument in log-time that geometric steps minimise their upper bound).
-  Sun–Poor–Zhang (2026, Thm 3) give an asymptotic, continuous-time lower bound on the path KL of a
-  related sampler, with Gaussian data as the extremal case. The faster decay of the output KL seen
-  numerically (`../showcase/ddpm_rate.py`, data with $`M \le d`$) cannot be recovered by bounding
-  the full KL along the true reverse chain and then applying data processing alone.
+  choose geometric steps by a convexity argument in log-time). Sun–Poor–Zhang (2026, Thm 3) give a
+  lower bound on the path KL of a related continuous-time sampler, with Gaussian data as the
+  extremal case. The faster decay of the output KL seen numerically (`../showcase/ddpm_rate.py`,
+  data with $`M \le d`$) cannot be recovered by bounding the full KL along the true reverse chain
+  and then applying data processing alone.
 - **Smooth separation (DF-7).** The separation of DF-3 holds, with TV $`\ge 1 - \eta`$, for a
   learned score whose error, at a single step, is an analytic function of the exact update with sup
   norm $`\le \varepsilon`$, while DDPM with the same score keeps the DF-1 bound: uniform score

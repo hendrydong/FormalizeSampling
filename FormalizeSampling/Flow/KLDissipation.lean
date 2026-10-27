@@ -46,7 +46,7 @@ App. A.5, Eqs. (31)-(32)).
   are the case `δ = 1`. The `_local` forms are proved through `exists_flow_extension`: a flow
   with free velocity on `(-δ, ∞)` extends to all of `ℝ` by a `C¹` time change on `(-∞, -δ/2]`
   that rescales the velocity. A two-sided neighbourhood of `t = 0` is still needed, because
-  `HasDerivAt` at `0` is two-sided; the paper needs only a right derivative there.
+  `HasDerivAt` at `0` is two-sided; a right derivative at `0` alone does not suffice here.
 * **State-tied velocity.** `hasDerivAt_klIntegral_idealVelocity` and
   `TransportKLRegularity.hasDerivAt_klDivDensity_idealVelocity` state `hce` with the ideal
   velocity `v⋆_t`, which depends on the state `p_t`, for every `t ∈ ℝ` (these are
@@ -167,9 +167,10 @@ hypotheses, as above.
   `LogSobolevAlongGaussian.logSobolevAlong_gaussian`. The nonvacuity instances here are the
   stationary flow, where `D ≡ 0`: they show that the hypotheses are jointly satisfiable, not
   that they hold along a nontrivial flow.
-* `HasDerivAt` at `t = 0` is two-sided, so every theorem needs the flow on some `(-δ, ∞)`; this
-  is stronger than the paper's one-sided requirement. The two theorems whose `hce` uses the
-  state-dependent `v⋆_t` for all `t ∈ ℝ` need an eternal ideal flow (see "Time domain").
+* `HasDerivAt` at `t = 0` is two-sided, so every theorem needs the flow on some `(-δ, ∞)`; a
+  flow given only for `t ≥ 0`, with a right derivative at `0`, is not covered. The two theorems
+  whose `hce` uses the state-dependent `v⋆_t` for all `t ∈ ℝ` need an eternal ideal flow (see
+  "Time domain").
 * Proposition 2, Lemma 1, the constant `1 - ε` for a minimiser over a cone (by orthogonality),
   finite particles, time discretisation, the inner optimisation loop and the
   code's estimated preconditioner are not formalised. (The constant `1 - √ε` for any velocity

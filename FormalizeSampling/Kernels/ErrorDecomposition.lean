@@ -113,10 +113,11 @@ Facts about `TVContraction` (nonvacuity and limits):
 
 * SPS (Huang et al., ICML 2024), Theorem 3.1 / Lemma B.5 and RTK Lemma 3.2 / rdMC Eq. (15)/(19)
   telescope **KL** with the chain rule (SPS Lemma B.1) and apply Pinsker **once**:
-  `TV(p̂_K, p_K) ≤ √(½ ∑_k δ_k)` for per-step KL oracle errors `δ_k` (SPS Eq. (7)). The TV route
-  here (per-step TV errors `ε_k`, e.g. `ε_k = √(δ_k / 2)` from a per-step Pinsker,
-  `Pinsker.tvSup_le_sqrt_klDiv`, not used here) gives `∑_k ε_k`, valid but looser by up to a
-  factor `√K`; with the paper's choice `δ_k = Θ(ε²/K)` it yields `Θ(√K ε)` instead of `Θ(ε)`.
+  `TV(p̂_K, p_K) ≤ √(½ ∑_k δ_k)` for per-step KL oracle errors `δ_k` (SPS Eq. (7)); in the
+  library this route is `ErrorPropagation.tvSup_chain_le_sqrt_klDiv_add_sum`. The TV route here
+  (per-step TV errors `ε_k`, e.g. `ε_k = √(δ_k / 2)` from a per-step Pinsker,
+  `Pinsker.tvSup_le_sqrt_klDiv`, not used here) gives `∑_k ε_k`, valid but looser than the KL
+  route by up to a factor `√K`.
 * SPS Theorem 3.1 bounds the initialisation term by
   `√((1+L²)d/(4α_*)) ∏(1 + α_* η_i)^{-1}`. That form is not formalised here: the initial term
   here is the actual initial TV `ρ^K tvSup (ν 0) π`, with the contraction packaged in the

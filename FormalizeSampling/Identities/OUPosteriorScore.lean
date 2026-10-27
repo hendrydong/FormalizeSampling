@@ -17,9 +17,9 @@ Paper statement (rdMC Lemma 1, §3.1, reverse-time index `t`):
 `∇ₓ ln p_{T-t}(x) = E_{x₀ ∼ q_{T-t}(· | x)} (e^{-(T-t)} x₀ - x) / (1 - e^{-2(T-t)})`,
 `q_{T-t}(x₀ | x) ∝ exp(-f_*(x₀) - ‖x - e^{-(T-t)} x₀‖² / (2(1 - e^{-2(T-t)})))`."
 In forward time `s = T - t > 0`: `∇ ln p_s(x) = (e^{-s} E[X₀ | Xₛ = x] - x) / (1 - e^{-2s})`.
-Here it is proved for an arbitrary prior law `μ` of `X₀` (the paper assumes a density
-`p_* ∝ e^{-f_*}`; that case is `ouPosteriorScore_density`) with no moment assumption, and the
-hypothesis `s > 0` (`t < T`) is explicit.
+Here it is proved for an arbitrary prior law `μ` of `X₀` with no moment assumption (the density
+case `p_* ∝ e^{-f_*}` is `ouPosteriorScore_density`), and the hypothesis `s > 0` (`t < T`) is
+explicit.
 
 ## Setting and conventions
 

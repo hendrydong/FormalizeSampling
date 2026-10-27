@@ -809,6 +809,29 @@ class ContractTests(unittest.TestCase):
         self.assertIn("Trailing whitespace: showcase/README.md:1", output)
         self.assertIn("Trailing whitespace: experiments/README.md:1", output)
 
+    def test_banned_phrases_are_rejected_in_documents_and_sources(self):
+        allowed = {
+            "README.md": self.readme() + "\nA version of Theorem 1, rather than the prior one.\n",
+            "docs/archive/notes.md": "We have not found this stated elsewhere.\n",
+        }
+        code, output = self.run_checker(MODULE, {}, write_index=True, docs=allowed)
+        self.assertEqual(code, 0, output)
+        banned = {
+            "README.md": self.readme() + "\nA novel bound.\n",
+            "docs/notes.md": "The exact sum, rather than the\npaper's bound.\n",
+            "experiments/README.md": "To our knowledge this is stated here only.\n",
+        }
+        module = MODULE.replace("/-! Example module. -/", "/-! Example; we have NOT found it. -/")
+        code, output = self.run_checker(module, {}, write_index=True, docs=banned)
+        self.assertEqual(code, 1)
+        self.assertIn("Banned phrase 'novel': README.md:", output)
+        self.assertIn("Banned phrase 'rather than the paper': docs/notes.md:1", output)
+        self.assertIn("Banned phrase 'To our knowledge': experiments/README.md:1", output)
+        self.assertIn(
+            "Banned phrase 'we have NOT found': FormalizeSampling/Foundations/Example.lean:5",
+            output,
+        )
+
     def test_required_documents_must_exist(self):
         code, output = self.run_checker(
             MODULE, {}, write_index=True, docs={"README.md": None, "docs/literature.md": None}

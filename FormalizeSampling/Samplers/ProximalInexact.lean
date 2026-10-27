@@ -68,7 +68,7 @@ step, inexact backward step) from a probability law `ν 0`. Assume, for every `k
   Pinsker argument is used), but unlike `TVContraction` it constrains only the laws
   `ν 0, …, ν (K-1)` and does not force uniform ergodicity;
 * `hR`: `tvSup (R' k y) (rgoKernel f (η k) y) ≤ ε k` for every `y` (a uniform TV oracle
-  condition, in place of the SPS paper's KL condition (7)).
+  condition).
 Then `tvSup (ν K) (target f) ≤ ρ^K tvSup (ν 0) (target f) + ∑_{k<K} ρ^(K-1-k) ε k`. The target
 is invariant for the exact kernel (`Proximal.proxKernel_comp_target`), so `hAlong` always holds
 with `ρ = 1` (KR-1), giving the additive bound. -/
@@ -98,10 +98,9 @@ theorem tvSup_inexactProx_le_along (hf : Measurable f)
 uniform version: only for uniformly ergodic kernels.** Let `f` be measurable with `exp ∘ (-f)`
 integrable, `η k > 0` step sizes (the Gaussian variances of the forward steps), and `R' k` Markov
 kernels (inexact inner RGO samplers) with `tvSup (R' k y) (rgoKernel f (η k) y) ≤ ε k` for every
-`y` (a uniform TV oracle condition, in place of the SPS paper's KL condition (7)). Let
-`ν (k+1) = (R' k ∘ₖ forwardKernel (η k)) ∘ₘ ν k` be the inexact proximal chain from a probability
-law `ν 0`. Under the named hypothesis `TVContraction (proxKernel f (η k)) (target f) ρ` for every
-`k`, with `0 ≤ ρ`,
+`y` (a uniform TV oracle condition). Let `ν (k+1) = (R' k ∘ₖ forwardKernel (η k)) ∘ₘ ν k` be the
+inexact proximal chain from a probability law `ν 0`. Under the named hypothesis
+`TVContraction (proxKernel f (η k)) (target f) ρ` for every `k`, with `0 ≤ ρ`,
 `tvSup (ν K) (target f) ≤ ρ^K tvSup (ν 0) (target f) + ∑_{k<K} ρ^(K-1-k) ε k`. The hypothesis
 holds with `ρ = 1` (`tvContraction_proxKernel`), giving the additive bound; with `ρ < 1` it would
 make the proximal kernel uniformly ergodic, which is not expected on `ℝ` with unbounded support

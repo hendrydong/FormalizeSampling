@@ -26,7 +26,9 @@ illustrations); status words next to IDs agree with the registry; the README cou
 moves table, literature map and Statuses section agree with the registry, the sources and
 docs/literature.md; docs/results.md has one bullet per registry row, in registry order, with the
 row's title and status mark; registry rows start with a bold title, cite documented theorems and
-list their modules; relative links and their anchors resolve.
+list their modules; relative links and their anchors resolve. No phrase of BANNED_PHRASES (the
+wording rules) occurs in these files, in the other docs/*.md files except the declaration index,
+or in the Lean sources.
 """
 
 from __future__ import annotations
@@ -84,6 +86,22 @@ STATUSES = ("Verified", "Conditional", "Counterexample", "Planned", "Open")  # i
 CERTIFIED = {"Verified", "Conditional", "Counterexample"}
 # A status word in italics (`*Conditional*`), the way docs/results.md marks a bullet.
 STATUS_MARK = re.compile(rf"\*({'|'.join(STATUSES)})\*")
+# Phrases that the wording rules exclude from the public text and the Lean sources (docstrings and
+# comments): a cited work is credited only for what is formalised, with no priority claims.
+# Matched case-insensitively; every space may be a line break.
+BANNED_PHRASES = (
+    "we have not found",
+    "not found before",
+    "to our knowledge",
+    "rather than the paper",
+    "paper states none",
+    "stronger than the paper",
+    "weaker than the paper",
+    "novel",
+)
+BANNED = re.compile(
+    "|".join(r"\s+".join(map(re.escape, phrase.split())) for phrase in BANNED_PHRASES), re.I
+)
 COLUMNS = 6  # ID | Status | Statement | Lean declarations | Assumptions and scope | Module
 FORBIDDEN = re.compile(r"\b(sorry|admit|axiom|native_decide)\b")
 OVERRIDES = re.compile(r"skipKernelTC|implemented_by|\bextern\b|debug\.skipKernelTC")
@@ -894,6 +912,16 @@ def link_errors(texts: dict[str, str]) -> list[str]:
     return errors
 
 
+def banned_phrase_errors(texts: dict[str, str]) -> list[str]:
+    """No text contains a phrase of BANNED_PHRASES, in any case, also across a line break."""
+    errors = []
+    for relative, text in texts.items():
+        for match in BANNED.finditer(text):
+            line = text.count("\n", 0, match.start()) + 1
+            errors.append(f"Banned phrase {' '.join(match[0].split())!r}: {relative}:{line}")
+    return errors
+
+
 def readme_examples(readme: str) -> list[str]:
     """The README's ```lean blocks that start with `import`: complete Lean files."""
     blocks = re.findall(r"(?ms)^```lean\n(.*?)^```", readme)
@@ -1064,6 +1092,13 @@ def main() -> int:
     errors += unknown_id_errors({**texts, **sources, **scripts}, ids, pattern)
     errors += status_word_errors(texts, {row[0]: row[1] for row in complete}, pattern)
     errors += link_errors(texts)
+    # The wording rules also cover the other docs/*.md files (not the generated index).
+    others = {
+        str(path.relative_to(ROOT)): path.read_text()
+        for path in sorted(ROOT.joinpath("docs").glob("*.md"))
+        if path != ROOT / INDEX
+    }
+    errors += banned_phrase_errors({**others, **texts, **sources})
     if README in texts:
         readme = texts[README]
         lines = sum(len(source.splitlines()) for source in sources.values())
