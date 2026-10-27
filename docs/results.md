@@ -38,7 +38,11 @@ $`u_k = e^{2t_k} - 1`$.
   $`d \log(1/\delta)`$ as $`\delta \to 0`$. The three terms are the initialisation, discretisation
   and score errors; the discretisation term is linear in the dimension, as in Benton–De
   Bortoli–Doucet–Deligiannidis (2024). The proof uses Tweedie's formula, an exact entropy identity
-  for each reverse step, de Bruijn's identity and the monotonicity of Fisher information.
+  for each reverse step, de Bruijn's identity and the monotonicity of Fisher information. The number
+  of steps is explicit: for every $`\varepsilon \gt 0`$ a geometric grid with
+  $`N \le 2(d + 1)L(L + 2)/\varepsilon + 2L + 2`$ steps gives
+  $`\mathrm{KL}(p_\delta \Vert \text{output}) \le \varepsilon`$ plus the score-error term, where
+  $`L`$ depends on $`d`$, $`M`$, $`\varepsilon`$ and $`\delta`$ only through a logarithm.
 - **Memorisation (DF-2).** With the exact score of its training set, a diffusion model reproduces
   the training points in the vanishing-noise limit: for every $`\rho, \varepsilon \gt 0`$ there are
   sampler parameters (early stopping, grid) giving output mass $`\ge 1 - \varepsilon`$ within

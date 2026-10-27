@@ -18,7 +18,10 @@ score error vanishes identically). The audit then shows the bound is not vacuous
 `TV(p_1, q_1) ≤ ε`, where `p_1` is the `t_1`-smoothed data law (`t_1 = log(1 + u_1) / 2`) and
 `q_1` the sampler output. The choice is `r = 1 + η` with `η → 0` and `N - 1 = ⌈X / η⌉`, so that
 `u_N / u_1 = r^{N-1} ≥ 1 + X` kills the initialisation term while the discretisation term
-`(r - 1) d / 2 (1 + (N - 1) log r) ≤ η d (X + 2) / 2` vanishes.
+`(r - 1) d / 2 (1 + (N - 1) log r) ≤ η d (X + 2) / 2` vanishes. A second witness applies the
+explicit step count `DiffusionDiscretization.klDiv_output_le_geomGrid_steps` to the two-point
+mixture: there `η` and `N` are given in closed form, with `N - 1 = ⌈L / log (1 + η)⌉₊` and `L`
+logarithmic in the second moment, `d`, `1 / ε` and `1 / u_1`.
 
 ## Main results
 
@@ -32,18 +35,23 @@ The general statements live in `Samplers/DiffusionMain.lean` (namespace
 * `exists_klDiv_output_le`, `exists_tvSup_output_le`: for every data law with finite second
   moment, exact score, `u_1 > 0`, `ε > 0`: some geometric grid gives `KL(p_1 ‖ q_1) ≤ ε`
   (resp. `TV(p_1, q_1) ≤ ε`).
+* `explicit_geomGrid_params`, `klDiv_output_le_geomGrid_steps`, `tvSup_output_le_geomGrid_steps`:
+  the same with `r` and `N` explicit, `N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2`, for every
+  learned score (the score error is added to the bound).
 
 Proved here:
 
 * `dirac_tvSup_output_le`, `twoPoint_tvSup_output_le`: the TV statement for a Dirac mass and
   for a two-point mixture, together with the absence of a Lebesgue density.
+* `integral_sqNorm_twoPoint`, `twoPoint_klDiv_output_le_steps`: the second moment of the
+  two-point mixture, and the explicit step count for it with `KL(p_1 ‖ q_1) ≤ ε`.
 
 ## Not proved here
 
 * No witness with an inexact learned score (`scoreErr > 0`); the score-error term is only
   exercised at the value `0`.
-* No rate or explicit `(r, N)` as a function of `ε`; only existence (the construction in the
-  proof of `exists_geomGrid_params` is explicit).
+* The TV form of the explicit step count (`tvSup_output_le_geomGrid_steps`) has no separate
+  witness.
 * Nothing about `p_1` versus the data law `μ` itself (the `t_1`-smoothing error).
 -/
 
@@ -58,7 +66,8 @@ open FormalizeSampling.Diffusion FormalizeSampling.DiffusionDiscretization
 
 export FormalizeSampling.DiffusionDiscretization (exists_geomGrid_params exactScore
   measurable_exactScore integrable_exactScore_err scoreErr_exactScore initConst_nonneg
-  exists_klDiv_output_le exists_tvSup_output_le)
+  exists_klDiv_output_le exists_tvSup_output_le explicit_geomGrid_params
+  klDiv_output_le_geomGrid_steps tvSup_output_le_geomGrid_steps)
 
 /-- A Dirac mass on `Fin (d + 1) → ℝ` has no Lebesgue density: `¬ δ_c ≪ volume`. -/
 theorem dirac_not_ac {d : ℕ} (c : Fin (d + 1) → ℝ) :
@@ -113,5 +122,47 @@ theorem twoPoint_tvSup_output_le {d : ℕ} (a b : Fin (d + 1) → ℝ) {u1 : ℝ
         (scoreMean (geomGrid u1 r) (exactScore (twoPoint a b) (geomGrid u1 r)))
         (measurable_scoreMean _ (measurable_exactScore _ _)) N 1) ≤ ε :=
   ⟨twoPoint_not_ac a b, exists_tvSup_output_le _ (integrable_sqNorm_twoPoint a b) hu1 hε⟩
+
+/-- The second moment of the two-point mixture:
+`∫ |x|² d((δ_a + δ_b) / 2) = (|a|² + |b|²) / 2`. -/
+theorem integral_sqNorm_twoPoint {d : ℕ} (a b : Fin d → ℝ) :
+    ∫ x, ∑ i, x i ^ 2 ∂(twoPoint a b) = (∑ i, a i ^ 2 + ∑ i, b i ^ 2) / 2 := by
+  rw [twoPoint, integral_add_measure ((integrable_sqNorm_dirac a).smul_measure (by simp))
+    ((integrable_sqNorm_dirac b).smul_measure (by simp)), integral_smul_measure,
+    integral_smul_measure, integral_dirac, integral_dirac]
+  simp
+  ring
+
+/-- **Witness, explicit step count.** For `μ = (δ_a + δ_b) / 2` on `Fin (d + 1) → ℝ`
+(non-Gaussian, no Lebesgue density), `u_1 > 0`, `ε > 0` and the exact score, set
+`M₂ = (|a|² + |b|²) / 2`, `v = u_1 / (1 + u_1)`,
+`A = ((d + 1) (v - 1 - log v) + M₂ / (1 + u_1)) / 2`,
+`L = log (max 1 (2 (1 + u_1) A / (ε u_1)))`, `η = min 1 (ε / ((d + 2) (L + 2)))` and
+`N = ⌈L / log (1 + η)⌉₊ + 1`. Then `N ≤ 2 (d + 2) L (L + 2) / ε + 2 L + 2` and the DDPM sampler
+with `N` steps on `geomGrid u_1 (1 + η)` gives `KL(p_1 ‖ q_1) ≤ ε`. This is
+`klDiv_output_le_geomGrid_steps` in dimension `d + 1` with every hypothesis discharged: finite
+second moment (`integrable_sqNorm_twoPoint`, value `integral_sqNorm_twoPoint`), measurability and
+integrable error of the exact score (`measurable_exactScore`, `integrable_exactScore_err`), and
+zero score error (`scoreErr_exactScore`). -/
+theorem twoPoint_klDiv_output_le_steps {d : ℕ} (a b : Fin (d + 1) → ℝ) {u1 ε : ℝ}
+    (hu1 : 0 < u1) (hε : 0 < ε) :
+    let A := ((d + 1) * (u1 / (1 + u1) - 1 - Real.log (u1 / (1 + u1))) +
+      (∑ i, a i ^ 2 + ∑ i, b i ^ 2) / 2 / (1 + u1)) / 2
+    let L := Real.log (max 1 (2 * (1 + u1) * A / (ε * u1)))
+    let η := min 1 (ε / ((d + 2) * (L + 2)))
+    let N := ⌈L / Real.log (1 + η)⌉₊ + 1
+    ¬ twoPoint a b ≪ volume ∧ (N : ℝ) ≤ 2 * (d + 2) * L * (L + 2) / ε + 2 * L + 2 ∧
+      klDiv (fwdLaw (twoPoint a b) (geomGrid u1 (1 + η)) 1)
+        (algLaw (ddpmVar (geomGrid u1 (1 + η)))
+        (scoreMean (geomGrid u1 (1 + η)) (exactScore (twoPoint a b) (geomGrid u1 (1 + η))))
+        (measurable_scoreMean _ (measurable_exactScore _ _)) N 1) ≤ ENNReal.ofReal ε := by
+  have h := klDiv_output_le_geomGrid_steps (twoPoint a b) (integrable_sqNorm_twoPoint a b) hu1 hε
+  rw [integral_sqNorm_twoPoint, Nat.cast_add, Nat.cast_one,
+    show ((d : ℝ) + 1 + 1) = d + 2 by ring] at h
+  intro A L η N
+  obtain ⟨hN, hkl⟩ := h
+  refine ⟨twoPoint_not_ac a b, hN, ?_⟩
+  have := hkl _ (measurable_exactScore _ _) (integrable_exactScore_err _ _ _)
+  rwa [scoreErr_exactScore, add_zero] at this
 
 end FormalizeSampling.Audit.Diffusion

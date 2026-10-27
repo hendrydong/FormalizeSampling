@@ -48,11 +48,17 @@ the output KL is at most the path KL (`DiffusionPath.klDiv_output_le_path`).
 * `exists_geomGrid_params`, `exists_klDiv_output_le`, `exists_tvSup_output_le`: with the exact
   score, for every data law with finite second moment, `u_1 > 0` and `ε > 0`, some geometric
   grid gives `KL(p_1 ‖ q_1) ≤ ε` (resp. `TV(p_1, q_1) ≤ ε`).
+* `explicit_geomGrid_params`, `klDiv_output_le_geomGrid_steps`, `tvSup_output_le_geomGrid_steps`:
+  an explicit step count. For every data law with finite second moment `M₂`, `u_1 > 0`, `ε > 0`
+  and every learned score, an explicit geometric grid with
+  `N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2` steps gives `KL(p_1 ‖ q_1) ≤ ε + scoreErr`, where `L`
+  depends on `d`, `M₂`, `ε` and `u_1` only through a logarithm; the TV form by Pinsker.
 
 ## Not proved here
 
 * No bound on the score error `∫ |s_k - ∇ log p_k|² dp_k` (it is an input).
-* The optimisation of `r` (or `N`) in terms of `T`, `t_1` is left as the informal remark above.
+* The optimisation of `r` (or `N`) in terms of `T`, `t_1` is left as the informal remark above;
+  `klDiv_output_le_geomGrid_steps` fixes one explicit choice of `r` and `N` for a target `ε`.
 -/
 
 @[expose] public section
@@ -621,5 +627,171 @@ theorem exists_tvSup_output_le {d : ℕ} (μ : Measure (Fin d → ℝ)) [IsProba
   rw [scoreErr_exactScore, add_zero, initBound_geomGrid μ hu1 (zero_lt_one.trans hr) hN]
   refine Real.sqrt_le_iff.2 ⟨hε.le, ?_⟩
   linarith
+
+/-! ### An explicit step count on the geometric grid -/
+
+/-- **Real-analysis core with explicit parameters.** For `d : ℕ`, `u_1 > 0`, `A ∈ ℝ` and `ε > 0`
+set `L = log (max 1 (2 (1 + u_1) A / (ε u_1)))`, `η = min 1 (ε / ((d + 1) (L + 2)))` and
+`M = ⌈L / log (1 + η)⌉₊`. Then, with `r = 1 + η` and `N - 1 = M`, the initialisation and
+discretisation terms of `initBound_geomGrid` and `klDiv_output_le_geomGrid` satisfy
+`(1 + u_1) / (1 + u_1 r^M) · A + (r - 1) d / 2 (1 + M log r) ≤ ε`, and `M ≤ 2 L / η + 1`.
+The proof uses `η / 2 ≤ log (1 + η) ≤ η` for `0 < η ≤ 1`, so that `r^M ≥ e^L`. -/
+theorem explicit_geomGrid_params (d : ℕ) {u1 A ε : ℝ} (hu1 : 0 < u1) (hε : 0 < ε) :
+    let L := Real.log (max 1 (2 * (1 + u1) * A / (ε * u1)))
+    let η := min 1 (ε / ((d + 1) * (L + 2)))
+    let M := ⌈L / Real.log (1 + η)⌉₊
+    (1 + u1) / (1 + u1 * (1 + η) ^ M) * A +
+        (1 + η - 1) * d / 2 * (1 + (M : ℝ) * Real.log (1 + η)) ≤ ε ∧
+      (M : ℝ) ≤ 2 * L / η + 1 := by
+  intro L η M
+  set X := 2 * (1 + u1) * A / (ε * u1) with hX
+  have hL0 : 0 ≤ L := Real.log_nonneg (le_max_left _ _)
+  have hη0 : 0 < η := lt_min one_pos (by positivity)
+  have hη1 : η ≤ 1 := min_le_left _ _
+  have hηε : η ≤ ε / ((d + 1) * (L + 2)) := min_le_right _ _
+  have hlog0 : 0 < Real.log (1 + η) := Real.log_pos (by linarith)
+  have hlogη : Real.log (1 + η) ≤ η := by
+    have := Real.log_le_sub_one_of_pos (by linarith : (0 : ℝ) < 1 + η); linarith
+  -- `log (1 + η) ≥ η / (1 + η) ≥ η / 2`
+  have hlogη2 : η / 2 ≤ Real.log (1 + η) := by
+    have h := Real.log_le_sub_one_of_pos (show (0 : ℝ) < 1 / (1 + η) by positivity)
+    rw [one_div, Real.log_inv] at h
+    have : 1 / (1 + η) ≤ 1 - η / 2 := by
+      rw [div_le_iff₀ (by linarith)]; nlinarith
+    rw [← one_div] at h
+    linarith
+  have hM1 : L / Real.log (1 + η) ≤ M := Nat.le_ceil _
+  have hM2 : (M : ℝ) < L / Real.log (1 + η) + 1 := Nat.ceil_lt_add_one (by positivity)
+  have hML1 : L ≤ M * Real.log (1 + η) := by rwa [div_le_iff₀ hlog0] at hM1
+  have hML2 : (M : ℝ) * Real.log (1 + η) ≤ L + η := by
+    have := mul_lt_mul_of_pos_right hM2 hlog0
+    rw [add_mul, div_mul_cancel₀ _ hlog0.ne', one_mul] at this
+    linarith
+  refine ⟨?_, ?_⟩
+  · -- initialisation term `≤ ε / 2`: `(1 + η)^M ≥ e^L = max 1 X`
+    have hpow : max 1 X ≤ (1 + η) ^ M := by
+      have : Real.exp L = max 1 X := Real.exp_log (lt_of_lt_of_le one_pos (le_max_left _ _))
+      rw [← this, ← Real.exp_log (show (0 : ℝ) < (1 + η) ^ M by positivity), Real.log_pow]
+      exact Real.exp_le_exp.2 hML1
+    have hinit : (1 + u1) / (1 + u1 * (1 + η) ^ M) * A ≤ ε / 2 := by
+      have hD0 : 0 < 1 + u1 * (1 + η) ^ M := by positivity
+      rw [div_mul_eq_mul_div, div_le_iff₀ hD0]
+      have hD : u1 * X ≤ 1 + u1 * (1 + η) ^ M := by
+        nlinarith [mul_le_mul_of_nonneg_left ((le_max_right 1 X).trans hpow) hu1.le]
+      have : (1 + u1) * A = ε / 2 * (u1 * X) := by rw [hX]; field_simp
+      rw [this]
+      exact mul_le_mul_of_nonneg_left hD (by positivity)
+    -- discretisation term `≤ ε / 2`: `1 + M log (1 + η) ≤ L + 2`
+    have hdisc : (1 + η - 1) * d / 2 * (1 + (M : ℝ) * Real.log (1 + η)) ≤ ε / 2 := by
+      rw [show 1 + η - 1 = η by ring]
+      have h3 : η * ((d + 1) * (L + 2)) ≤ ε := by rwa [le_div_iff₀ (by positivity)] at hηε
+      have h0 : 0 ≤ 1 + (M : ℝ) * Real.log (1 + η) := by positivity
+      have : η * d / 2 * (1 + (M : ℝ) * Real.log (1 + η)) ≤ η * (d + 1) / 2 * (L + 2) :=
+        mul_le_mul (by nlinarith) (by linarith) h0 (by positivity)
+      linarith [show η * (d + 1) / 2 * (L + 2) = η * ((d + 1) * (L + 2)) / 2 by ring]
+    linarith
+  · -- step count: `L / log (1 + η) ≤ 2 L / η`
+    have : L / Real.log (1 + η) ≤ 2 * L / η := by
+      rw [div_le_div_iff₀ hlog0 hη0]; nlinarith
+    linarith
+
+/-- **Explicit step count, KL.** Let `μ` be a probability law on `Fin d → ℝ` with finite second
+moment `M₂ = ∫ |x|² dμ` (no density assumed), `u_1 > 0` and `ε > 0`. Set `v = u_1 / (1 + u_1)`,
+`A = (d (v - 1 - log v) + M₂ / (1 + u_1)) / 2`, `L = log (max 1 (2 (1 + u_1) A / (ε u_1)))`,
+`η = min 1 (ε / ((d + 1) (L + 2)))` and `N = ⌈L / log (1 + η)⌉₊ + 1`. Then
+`N ≤ 2 (d + 1) L (L + 2) / ε + 2 L + 2`, and on the geometric grid `geomGrid u_1 (1 + η)`
+(`u_k = u_1 (1 + η)^{k-1}`) the DDPM sampler (`σ_k² = β_k / α_k²`, started at `N(0, I)`, `N`
+steps) satisfies, for every learned score `s` with each `s_k` measurable and each score error
+`∑ᵢ (s_k(y)ᵢ - ∂ᵢ log p_k(y))²` integrable under `p_k` (`2 ≤ k ≤ N`),
+`KL(p_1 ‖ q_1) ≤ ε + ∑_{k=2}^N (β_k / 2) ∫ |s_k - ∇ log p_k|² dp_k` (`scoreErr`). Here `p_k` is
+the forward law at `t_k`, so `p_1` is the data law smoothed up to `t_1 = log (1 + u_1) / 2`, and
+`q_1` is the sampler output. `L` depends on `d`, `M₂`, `ε` and `u_1` only through a logarithm.
+Obtained from `klDiv_output_le_geomGrid`, `initBound_geomGrid` and `explicit_geomGrid_params`. -/
+theorem klDiv_output_le_geomGrid_steps (μ : Measure (Fin d → ℝ)) [IsProbabilityMeasure μ]
+    (hμ : Integrable (fun x => ∑ i, x i ^ 2) μ) {u1 ε : ℝ} (hu1 : 0 < u1) (hε : 0 < ε) :
+    let A := (d * (u1 / (1 + u1) - 1 - Real.log (u1 / (1 + u1))) +
+      (∫ x, ∑ i, x i ^ 2 ∂μ) / (1 + u1)) / 2
+    let L := Real.log (max 1 (2 * (1 + u1) * A / (ε * u1)))
+    let η := min 1 (ε / ((d + 1) * (L + 2)))
+    let N := ⌈L / Real.log (1 + η)⌉₊ + 1
+    (N : ℝ) ≤ 2 * (d + 1) * L * (L + 2) / ε + 2 * L + 2 ∧
+    ∀ (s : ℕ → (Fin d → ℝ) → Fin d → ℝ) (hs : ∀ k, Measurable (s k)),
+      (∀ k ∈ Ioc 1 N, Integrable
+        (fun y => ∑ i, (s k y i - score (fwdDensity μ (geomGrid u1 (1 + η)) k) y i) ^ 2)
+          (fwdLaw μ (geomGrid u1 (1 + η)) k)) →
+      klDiv (fwdLaw μ (geomGrid u1 (1 + η)) 1) (algLaw (ddpmVar (geomGrid u1 (1 + η)))
+          (scoreMean (geomGrid u1 (1 + η)) s) (measurable_scoreMean _ hs) N 1) ≤
+        ENNReal.ofReal (ε + scoreErr μ (geomGrid u1 (1 + η)) s N) := by
+  intro A L η N
+  obtain ⟨hle, hcount⟩ := explicit_geomGrid_params (A := A) d hu1 hε
+  have hL0 : 0 ≤ L := Real.log_nonneg (le_max_left _ _)
+  have hη0 : 0 < η := lt_min one_pos (by positivity)
+  refine ⟨?_, fun s hs hsint => ?_⟩
+  · -- `L / η ≤ L (1 + (d + 1) (L + 2) / ε)`, since `η = min 1 (ε / ((d + 1) (L + 2)))`
+    have hK : 0 < ((d : ℝ) + 1) * (L + 2) := by positivity
+    have hLη : 2 * L / η ≤ 2 * (d + 1) * L * (L + 2) / ε + 2 * L := by
+      rw [div_le_iff₀ hη0]
+      rcases min_choice 1 (ε / ((d + 1) * (L + 2))) with h | h
+      · have : η = 1 := h
+        rw [this]
+        have : 0 ≤ 2 * (d + 1) * L * (L + 2) / ε := by positivity
+        linarith
+      · have : η = ε / ((d + 1) * (L + 2)) := h
+        rw [this]
+        have : 2 * (d + 1) * L * (L + 2) / ε * (ε / ((d + 1) * (L + 2))) = 2 * L := by
+          field_simp
+        nlinarith [div_pos hε hK]
+    push_cast [N]
+    linarith
+  have hr : 1 < 1 + η := by linarith
+  refine (klDiv_output_le_geomGrid μ hμ hu1 hr (by omega) s hs hsint).trans
+    (ENNReal.ofReal_le_ofReal ?_)
+  rw [initBound_geomGrid μ hu1 (by linarith) (by omega), show N - 1 = ⌈L / Real.log (1 + η)⌉₊ by
+    omega]
+  exact add_le_add_left hle _
+
+/-- **Explicit step count, TV.** Under the hypotheses of `klDiv_output_le_geomGrid_steps`, with
+the target `ε` for TV (so the parameters are those of the KL form for `2 ε²`): set `A` as there,
+`L = log (max 1 (2 (1 + u_1) A / (2 ε² u_1)))`, `η = min 1 (2 ε² / ((d + 1) (L + 2)))` and
+`N = ⌈L / log (1 + η)⌉₊ + 1`. Then `N ≤ (d + 1) L (L + 2) / ε² + 2 L + 2`, and on
+`geomGrid u_1 (1 + η)`, for every learned score `s` with each `s_k` measurable and each score
+error integrable under `p_k` (`2 ≤ k ≤ N`),
+`TV(p_1, q_1) ≤ √(ε² + (∑_{k=2}^N (β_k / 2) ∫ |s_k - ∇ log p_k|² dp_k) / 2)`; with the exact
+score this is `ε`. Obtained from `tvSup_output_le_geomGrid` (Pinsker) and
+`explicit_geomGrid_params`. -/
+theorem tvSup_output_le_geomGrid_steps (μ : Measure (Fin d → ℝ)) [IsProbabilityMeasure μ]
+    (hμ : Integrable (fun x => ∑ i, x i ^ 2) μ) {u1 ε : ℝ} (hu1 : 0 < u1) (hε : 0 < ε) :
+    let A := (d * (u1 / (1 + u1) - 1 - Real.log (u1 / (1 + u1))) +
+      (∫ x, ∑ i, x i ^ 2 ∂μ) / (1 + u1)) / 2
+    let L := Real.log (max 1 (2 * (1 + u1) * A / (2 * ε ^ 2 * u1)))
+    let η := min 1 (2 * ε ^ 2 / ((d + 1) * (L + 2)))
+    let N := ⌈L / Real.log (1 + η)⌉₊ + 1
+    (N : ℝ) ≤ (d + 1) * L * (L + 2) / ε ^ 2 + 2 * L + 2 ∧
+    ∀ (s : ℕ → (Fin d → ℝ) → Fin d → ℝ) (hs : ∀ k, Measurable (s k)),
+      (∀ k ∈ Ioc 1 N, Integrable
+        (fun y => ∑ i, (s k y i - score (fwdDensity μ (geomGrid u1 (1 + η)) k) y i) ^ 2)
+          (fwdLaw μ (geomGrid u1 (1 + η)) k)) →
+      TotalVariation.tvSup (fwdLaw μ (geomGrid u1 (1 + η)) 1)
+          (algLaw (ddpmVar (geomGrid u1 (1 + η))) (scoreMean (geomGrid u1 (1 + η)) s)
+            (measurable_scoreMean _ hs) N 1) ≤
+        Real.sqrt (ε ^ 2 + scoreErr μ (geomGrid u1 (1 + η)) s N / 2) := by
+  intro A L η N
+  have hε2 : 0 < 2 * ε ^ 2 := by positivity
+  obtain ⟨hcount, -⟩ := klDiv_output_le_geomGrid_steps μ hμ hu1 hε2
+  obtain ⟨hle, -⟩ := explicit_geomGrid_params (A := A) d hu1 hε2
+  have hL0 : 0 ≤ L := Real.log_nonneg (le_max_left _ _)
+  have hη0 : 0 < η := lt_min one_pos (by positivity)
+  refine ⟨?_, fun s hs hsint => ?_⟩
+  · have : 2 * (d + 1) * L * (L + 2) / (2 * ε ^ 2) = (d + 1) * L * (L + 2) / ε ^ 2 := by
+      field_simp
+    exact this ▸ hcount
+  have hr : 1 < 1 + η := by linarith
+  refine (tvSup_output_le_geomGrid μ hμ hu1 hr (by omega) s hs hsint).trans
+    (Real.sqrt_le_sqrt ?_)
+  rw [initBound_geomGrid μ hu1 (by linarith) (by omega), show N - 1 = ⌈L / Real.log (1 + η)⌉₊ by
+    omega]
+  calc _ ≤ (2 * ε ^ 2 + scoreErr μ (geomGrid u1 (1 + η)) s N) / 2 :=
+        div_le_div_of_nonneg_right (add_le_add_left hle _) zero_le_two
+    _ = _ := by ring
 
 end FormalizeSampling.DiffusionDiscretization
